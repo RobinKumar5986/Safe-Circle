@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.kgjr.safecircle" />
+                  <option name="mobileSdkAppId" value="1:365977499511:android:364b3833c6233ff5b99372" />
+                  <option name="projectId" value="safe-circle-8904a" />
+                  <option name="projectNumber" value="365977499511" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

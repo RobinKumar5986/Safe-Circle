@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import com.kgjr.safecircle.ui.navigationGraph.subGraphs.allPermissionGraph
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.homeScreenGraph
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.authGraph
 
@@ -12,5 +13,6 @@ fun MainGraph(navController: NavHostController, modifier: Modifier = Modifier, d
     NavHost(navController = navController , startDestination = destination){
         authGraph(navController = navController)
         homeScreenGraph(navController = navController)
+        allPermissionGraph(navController = navController)
     }
 }

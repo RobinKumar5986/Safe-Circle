@@ -21,36 +21,43 @@ import androidx.core.view.WindowInsetsControllerCompat
 val BaseColor = Color(0xFFB57BFF)
 
 val SafeCirclePrimary = BaseColor
-val SafeCircleSecondary = BaseColor.copy(alpha = 0.8f)
-val SafeCircleTertiary = BaseColor.copy(alpha = 0.6f)
+val SafeCircleSecondary = BaseColor.copy(alpha = 0.85f)
+val SafeCircleTertiary = BaseColor.copy(alpha = 0.65f)
 
-// === Light Color Scheme ===
 private val LightColorScheme = lightColorScheme(
     primary = SafeCirclePrimary,
-    secondary = SafeCircleSecondary,
-    tertiary = SafeCircleTertiary,
-    background = Color.White,
-    surface = Color.White,
     onPrimary = Color.White,
-    onSecondary = Color.Black,
+    secondary = SafeCircleSecondary,
+    onSecondary = Color.White,
+    tertiary = SafeCircleTertiary,
     onTertiary = Color.Black,
+
+    background = Color(0xFFF8F8F8),
     onBackground = Color.Black,
-    onSurface = Color.Black
+    surface = Color.White,
+    onSurface = Color.Black,
+
+    surfaceVariant = Color(0xFFE0E0E0),
+    onSurfaceVariant = Color(0xFF757575),
 )
 
-// === Dark Color Scheme ===
 private val DarkColorScheme = darkColorScheme(
     primary = SafeCirclePrimary,
-    secondary = SafeCircleSecondary,
-    tertiary = SafeCircleTertiary,
-    background = Color(0xFF121212),
-    surface = Color(0xFF121212),
     onPrimary = Color.Black,
-    onSecondary = Color.White,
+    secondary = SafeCircleSecondary,
+    onSecondary = Color.Black,
+    tertiary = SafeCircleTertiary,
     onTertiary = Color.White,
+
+    background = Color(0xFF121212),
     onBackground = Color.White,
-    onSurface = Color.White
+    surface = Color(0xFF1E1E1E),
+    onSurface = Color.White,
+
+    surfaceVariant = Color(0xFF2C2C2C),
+    onSurfaceVariant = Color(0xFFB0B0B0),
 )
+
 
 // === Theme Wrapper ===
 @Composable

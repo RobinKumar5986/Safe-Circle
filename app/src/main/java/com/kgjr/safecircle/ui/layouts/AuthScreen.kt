@@ -1,5 +1,6 @@
 package com.kgjr.safecircle.ui.layouts
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -12,14 +13,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.theme.googleButtonCole
+import com.kgjr.safecircle.ui.utils.Auth.google_sign_in.SignInState
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
-fun SignUpView() {
+fun SignUpView(
+    signInState: SignInState,
+    nav: () -> Unit,
+    onSignInClick:() -> Unit
+) {
+    val context = LocalContext.current
+    LaunchedEffect(signInState.signInErrorMessage) {
+        signInState.signInErrorMessage?.let { error ->
+            Toast.makeText(context, error , Toast.LENGTH_SHORT).show()
+        }
+    }
+    LaunchedEffect(signInState.isSignInSuccessFull) {
+        if(signInState.isSignInSuccessFull == true) {
+            nav()
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -28,7 +47,9 @@ fun SignUpView() {
             .padding(bottom = 60.dp)
     ) {
         Button(
-            onClick = { },
+            onClick = {
+                onSignInClick()
+            },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()

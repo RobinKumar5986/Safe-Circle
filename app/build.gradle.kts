@@ -5,7 +5,9 @@ plugins {
 
     id("com.google.dagger.hilt.android")
     kotlin("kapt")
-    alias(libs.plugins.google.gms.google.services)
+    id("com.google.gms.google-services")
+
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin") version "2.0.1"
 }
 
 android {
@@ -57,10 +59,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.firebase.auth)
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -73,6 +71,26 @@ dependencies {
     //dagger -  hilt dependency
     implementation("com.google.dagger:hilt-android:2.51.1")
     kapt("com.google.dagger:hilt-compiler:2.51.1")
-    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
+    implementation ("androidx.navigation:navigation-compose:2.6.0")
+
+    //Firebase dependency
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation ("com.google.firebase:firebase-database")
+
+
+    //gson dependency
+    implementation ("com.google.code.gson:gson:2.13.1")
+
+    //Google Map dependency
+    implementation("com.google.maps.android:maps-compose:6.4.1")
+    implementation ("com.google.maps.android:maps-utils-ktx:3.4.0")
+
+    //Async Image Loading dependency
+    implementation("io.coil-kt:coil-compose:2.0.0-rc01")
+
+    //lotti animation dependency
+    implementation("com.airbnb.android:lottie-compose:6.4.1")
 
 }

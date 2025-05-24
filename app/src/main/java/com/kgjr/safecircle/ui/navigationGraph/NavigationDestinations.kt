@@ -4,6 +4,9 @@ object NavigationDestinations {
     const val loginScreenMain = "LOGIN_SCREEN_MAIN"
     const val loginScreen = "LOGIN_SCREEN"
 
+    const val allPermissionMain = "ALL_PERMISSION_SCREEN_MAIN"
+    const val allPermission = "ALL_PERMISSION_SCREEN"
+
     const val homeScreenMain = "HOME_SCREEN_MAIN"
     const val homeScreen = "HOME_SCREEN"
 }

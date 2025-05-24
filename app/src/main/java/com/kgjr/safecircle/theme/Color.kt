@@ -43,3 +43,7 @@ val onBackgroundColor = Color(0xFF2A2A2A)
 
 // On Surface - Card text color
 val onSurfaceColor = Color(0xFF3A3A3A)
+
+
+val LightGrayBackground = Color(0xFFF2F2F7)
+val DarkText = Color(0xFF1C1C1E)
