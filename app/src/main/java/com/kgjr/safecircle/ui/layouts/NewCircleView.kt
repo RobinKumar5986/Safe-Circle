@@ -66,7 +66,6 @@ fun NameCircleScreen(
             "Babysitter"
         )
     }
-    val scrollState = rememberLazyListState()
 
     val currentSuggestions = remember(circleNameInput, predefinedSuggestions) {
         val list = mutableListOf<String>()

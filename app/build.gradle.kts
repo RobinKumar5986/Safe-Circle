@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -79,6 +80,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.0.0")
     implementation ("com.google.firebase:firebase-database")
 
+    // Google Play Services Location (Fused Location Provider)
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     //gson dependency
     implementation ("com.google.code.gson:gson:2.13.1")
@@ -88,9 +91,16 @@ dependencies {
     implementation ("com.google.maps.android:maps-utils-ktx:3.4.0")
 
     //Async Image Loading dependency
-    implementation("io.coil-kt:coil-compose:2.0.0-rc01")
+//    implementation("io.coil-kt:coil-compose:2.0.0-rc01")
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("io.coil-kt:coil-gif:2.6.0")
 
     //lotti animation dependency
     implementation("com.airbnb.android:lottie-compose:6.4.1")
+
+
+    //gson and okHttp3 dependency
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
 
 }

@@ -9,4 +9,5 @@ object NavigationDestinations {
 
     const val homeScreenMain = "HOME_SCREEN_MAIN"
     const val homeScreen = "HOME_SCREEN"
+    const val invitationScreen  = "INVITATION_SCREEN/{groupId}"
 }

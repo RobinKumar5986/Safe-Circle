@@ -12,12 +12,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.utils.NotificationUtils
@@ -29,6 +33,8 @@ fun AllPermissionScreen(
     nav: () -> Unit
 ){
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     val locationPermissionGranted = remember { mutableStateOf(LocationUtils.isLocationPermissionGranted(context)) }
     val notificationPermissionGranted = remember { mutableStateOf(NotificationUtils.isNotificationPermissionGranted(context)) }
     val activityPermissionGranted = remember { mutableStateOf(PhysicalActivityUtils.isActivityPermissionGranted(context))
@@ -54,6 +60,19 @@ fun AllPermissionScreen(
             activityPermissionGranted.value
         ) {
             nav()
+        }
+    }
+    // @Note: this is for on resume code (Life cycle controller)
+    DisposableEffect(Unit) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                locationPermissionGranted.value = LocationUtils.isLocationPermissionGranted(context)
+                notificationPermissionGranted.value = NotificationUtils.isNotificationPermissionGranted(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
     val permissionItems = listOf( PermissionItemData(

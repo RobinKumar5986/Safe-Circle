@@ -1,6 +1,6 @@
 package com.kgjr.safecircle.ui.layouts
 
-import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -37,6 +37,7 @@ import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -50,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -62,19 +64,22 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.MarkerComposable
+import com.google.maps.android.compose.rememberMarkerState
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.theme.baseThemeColor
-import com.kgjr.safecircle.ui.navigationGraph.MainGraph
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 import kotlinx.coroutines.delay
@@ -83,31 +88,65 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupScreen(
-    nav: (HomeIds) -> Unit
+    nav: (HomeIds,currentCircleId: String) -> Unit
 ) {
+    val context  = LocalContext.current
     val viewModel: GroupViewModel = viewModel()
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     val scaffoldState = rememberBottomSheetScaffoldState()
-    var isCreateNewCircle by remember { mutableStateOf(false) }
-    var targetAlpha by remember { mutableStateOf(1f) }
+    var isCreateNewCircleTopSheet by remember { mutableStateOf(false) }
+    var targetAlpha by remember { mutableFloatStateOf(1f) }
     var selectedMapType by remember { mutableStateOf(MapType.NORMAL) }
     var isChangeLayer by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+
     var createNewCircle by remember { mutableStateOf(false) }
     var createNewCircleAnimation by remember { mutableStateOf(false) }
+
+    var joinNewCircle by remember { mutableStateOf(false) }
+    var joinNewCircleAnimation by remember { mutableStateOf(false) }
 
     val userName = MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userName
     val eMail = MainApplication.getGoogleAuthUiClient().getSignedInUser()?.email
     val adminId = MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId
     val profileImageUrl = MainApplication.getGoogleAuthUiClient().getSignedInUser()?.profileUrl
 
+    val userData by viewModel.user.collectAsState()
+    val groupList by viewModel.groupList.collectAsState()
+    val currentSelectedGroup by viewModel.group.collectAsState()
+    val currentGroupId by viewModel.currentGroupId.collectAsState()
+
     val alpha by animateFloatAsState(
         targetValue = targetAlpha,
         label = "FadeAnimation"
     )
-    BackHandler(enabled = isCreateNewCircle) {
-        isCreateNewCircle = false
+    LaunchedEffect(error) {
+        if(error != null){
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
+    }
+    LaunchedEffect(Unit) {
+        adminId?.let {
+            if (userData == null) {
+                viewModel.loadUserData(userId = adminId)
+            }else{
+                if(currentGroupId != null){
+                    viewModel.loadGroupById(groupId = currentGroupId!!) {}
+                }else{
+                    viewModel.loadGroupById(groupId = groupList[0].id) {}
+                }
+            }
+        }
+    }
+    BackHandler(enabled = isCreateNewCircleTopSheet) {
+        isCreateNewCircleTopSheet = false
+    }
+    BackHandler(enabled = joinNewCircle) {
+        joinNewCircle = false
+        joinNewCircleAnimation = false
     }
     BackHandler(enabled = createNewCircle ) {
         createNewCircleAnimation = false
@@ -142,7 +181,37 @@ fun GroupScreen(
                     }
                 })
             }
-        }else {
+        }
+        else if(joinNewCircle){
+            AnimatedVisibility(
+                visible = joinNewCircleAnimation,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(durationMillis = 300)
+                ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(durationMillis = 300)
+                ) + fadeOut(animationSpec = tween(durationMillis = 300))
+            ) {
+                JoinCircleScreen(onSubmitPress = { code ->
+                    joinNewCircle = false
+                    joinNewCircleAnimation = false
+                    viewModel.joinNewCircle(
+                        groupId = code,
+                        userId = adminId!!,
+                        userName = userName ?: "",
+                        userEmail = eMail!!,
+                        userProfileUrl = profileImageUrl ?: ""
+                    )
+
+                }, onBackPress = {
+                    joinNewCircle = false
+                    joinNewCircleAnimation = false
+                })
+            }
+        }
+        else {
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
                 sheetContent = {
@@ -151,7 +220,48 @@ fun GroupScreen(
                             .background(Color.White)
                             .fillMaxSize()
                     ) {
+                        if(groupList.isEmpty()) {
 
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                                    .padding(top = 30.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        isCreateNewCircleTopSheet = false
+                                        createNewCircle = true
+                                        scope.launch {
+                                            delay(10)
+                                            createNewCircleAnimation = true
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = baseThemeColor)
+                                ) {
+                                    Text("Create a Circle")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        isCreateNewCircleTopSheet = false
+                                        joinNewCircle = true
+                                        scope.launch {
+                                            delay(10)
+                                            joinNewCircleAnimation = true
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = baseThemeColor)
+                                ) {
+                                    Text("Join a Circle")
+                                }
+                            }
+                        }else{
+                            UserList(viewModel)
+                        }
                     }
                 },
                 sheetContainerColor = Color.White,
@@ -173,11 +283,7 @@ fun GroupScreen(
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    GoogleMap(
-                        modifier = Modifier.fillMaxSize(),
-                        uiSettings = MapUiSettings(zoomControlsEnabled = false),
-                        properties = MapProperties(mapType = selectedMapType)
-                    )
+                    MapWithCustomMarker(selectedMapType = selectedMapType, viewModel = viewModel)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -215,11 +321,11 @@ fun GroupScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        if (isCreateNewCircle) Color.Black.copy(alpha = 0.5f) else Color.Transparent
+                        if (isCreateNewCircleTopSheet) Color.Black.copy(alpha = 0.5f) else Color.Transparent
                     )
                     .then(
-                        if (isCreateNewCircle) Modifier.clickable(
-                            onClick = { isCreateNewCircle = false },
+                        if (isCreateNewCircleTopSheet) Modifier.clickable(
+                            onClick = { isCreateNewCircleTopSheet = false },
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) else Modifier
@@ -227,7 +333,7 @@ fun GroupScreen(
             ) {
                 // Sliding sheet (Create New Circle) - below the header
                 AnimatedVisibility(
-                    visible = isCreateNewCircle,
+                    visible = isCreateNewCircleTopSheet,
                     enter = slideInVertically(
                         initialOffsetY = { -it },
                         animationSpec = tween(durationMillis = 300)
@@ -254,13 +360,16 @@ fun GroupScreen(
                         ) {
                             Box {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
                                         .padding(top = 25.dp),
                                     horizontalArrangement = Arrangement.End
                                 ) {
                                     IconButton(
                                         onClick = {
-                                            nav(HomeIds.JOIN_CIRCLE)
+                                            currentGroupId?.let{
+                                                nav(HomeIds.ADD_TO_CIRCLE,it)
+                                            }
                                         },
                                         modifier = Modifier.size(36.dp)
                                     ) {
@@ -271,7 +380,6 @@ fun GroupScreen(
                                             modifier = Modifier
                                                 .size(28.dp)
                                                 .padding(2.dp)
-
                                         )
                                     }
                                 }
@@ -291,7 +399,30 @@ fun GroupScreen(
                                             .fillMaxWidth()
                                             .verticalScroll(rememberScrollState())
                                     ) {
-                                        //TODO: need to create a list item view for the members...
+                                        /**
+                                         * @Mark: All groups list section
+                                         * */
+                                        groupList.forEach { item ->
+                                            Text(
+                                                item.name,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        viewModel.loadGroupById(item.id) {
+                                                            isCreateNewCircleTopSheet = false
+                                                        }
+
+                                                    }
+                                                    .padding(16.dp)
+                                            )
+                                            HorizontalDivider(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 24.dp),
+                                                thickness = 0.5.dp,
+                                                color = Color.Gray.copy(alpha = 0.5f)
+                                            )
+                                        }
                                     }
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -299,7 +430,7 @@ fun GroupScreen(
                                     ) {
                                         Button(
                                             onClick = {
-                                                isCreateNewCircle = false
+                                                isCreateNewCircleTopSheet = false
                                                 createNewCircle = true
                                                 scope.launch {
                                                     delay(10)
@@ -314,7 +445,12 @@ fun GroupScreen(
 
                                         Button(
                                             onClick = {
-                                                nav(HomeIds.JOIN_CIRCLE)
+                                                isCreateNewCircleTopSheet = false
+                                                joinNewCircle = true
+                                                scope.launch {
+                                                    delay(10)
+                                                    joinNewCircleAnimation = true
+                                                }
                                             },
                                             modifier = Modifier.weight(1f),
                                             colors = ButtonDefaults.buttonColors(containerColor = baseThemeColor)
@@ -329,11 +465,14 @@ fun GroupScreen(
                         }
                     }
                 }
-                GroupDropdown(
-                    visible = alpha == 1f,
-                    isCreateNewCircle = isCreateNewCircle,
-                    onToggle = { isCreateNewCircle = !isCreateNewCircle }
-                )
+
+                if(!groupList.isEmpty()) {
+                    GroupDropdown(
+                        currentGroupName = currentSelectedGroup?.name ?: "N/A",
+                        visible = alpha == 1f,
+                        onToggle = { isCreateNewCircleTopSheet = !isCreateNewCircleTopSheet }
+                    )
+                }
             }
             if (isChangeLayer) {
                 ModalBottomSheet(

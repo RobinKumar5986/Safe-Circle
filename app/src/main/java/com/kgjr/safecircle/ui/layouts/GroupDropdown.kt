@@ -28,8 +28,8 @@ import com.kgjr.safecircle.theme.baseThemeColor
 
 @Composable
 fun GroupDropdown(
+    currentGroupName: String,
     visible: Boolean,
-    isCreateNewCircle: Boolean,
     onToggle: () -> Unit
 ) {
     AnimatedVisibility(
@@ -58,7 +58,7 @@ fun GroupDropdown(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Family",
+                    text = currentGroupName,
                     textAlign = TextAlign.Start,
                     color = Color.Black
                 )
