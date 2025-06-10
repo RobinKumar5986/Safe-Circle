@@ -49,3 +49,15 @@ val LightGrayBackground = Color(0xFFF2F2F7)
 val DarkText = Color(0xFF1C1C1E)
 
 val orangeColor =  Color(0xFFFF9800)
+
+val SoftDarkGreen = Color(0xFF2E7D32)   // Dark, earthy green
+val SoftDarkRed   = Color(0xFFC62828)   // Deep red, slightly softened
+val SoftOrange    = Color(0xFFFF8F00)   // Soft but noticeable orange
+
+
+val LightTextColor = Color(0xFF1C1C1E)
+val DarkTextColor = Color(0xFFF2F2F2)
+val SubtleLightTextColor = Color(0xFF050505)
+val SubtleDarkTextColor = Color(0xFFDDDDDD)
+
+

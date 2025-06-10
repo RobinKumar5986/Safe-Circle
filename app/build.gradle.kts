@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "com.kgjr.safecircle"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -102,5 +102,15 @@ dependencies {
     //gson and okHttp3 dependency
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
+
+    //workManager Dependency
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    //Material Dependency
+    implementation ("androidx.compose.material:material:1.6.7")
+
+
+    //Graph Dependency
+    implementation ("co.yml:ycharts:2.1.0")
 
 }

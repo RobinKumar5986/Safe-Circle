@@ -1,6 +1,8 @@
 package com.kgjr.safecircle
 
 import android.app.Application
+import android.content.Intent
+import android.content.IntentFilter
 import com.google.android.gms.auth.api.identity.Identity
 import com.kgjr.safecircle.ui.utils.Auth.google_sign_in.GoogleAuthUiClient
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager

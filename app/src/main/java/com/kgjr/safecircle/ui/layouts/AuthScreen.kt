@@ -21,24 +21,29 @@ import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.theme.googleButtonCole
 import com.kgjr.safecircle.ui.utils.Auth.google_sign_in.SignInState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun SignUpView(
     signInState: SignInState,
     nav: () -> Unit,
-    onSignInClick:() -> Unit
+    onSignInClick: () -> Unit
 ) {
     val context = LocalContext.current
+
     LaunchedEffect(signInState.signInErrorMessage) {
         signInState.signInErrorMessage?.let { error ->
-            Toast.makeText(context, error , Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
         }
     }
+
     LaunchedEffect(signInState.isSignInSuccessFull) {
-        if(signInState.isSignInSuccessFull == true) {
+        if (signInState.isSignInSuccessFull == true) {
             nav()
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -46,6 +51,42 @@ fun SignUpView(
             .padding(20.dp)
             .padding(bottom = 60.dp)
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 60.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // App Logo
+            Image(
+                painter = painterResource(id = R.drawable.main_app_logo_empty_background),
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .padding(top =  100.dp)
+                    .size(200.dp)
+                    .padding(bottom = 16.dp)
+            )
+
+            // App Slogan
+            Text(
+                text = "Safe Circle Keeps you Safe",
+                color = Color.Black,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            // Made with Love
+            Text(
+                text = "Made with Love",
+                color = Color.White,
+                fontWeight = FontWeight.Normal,
+                fontSize = 16.sp
+            )
+
+        }
+
+        // Google Sign-Up Button
         Button(
             onClick = {
                 onSignInClick()

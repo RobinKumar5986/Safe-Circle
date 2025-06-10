@@ -1,5 +1,8 @@
 package com.kgjr.safecircle.ui.layouts
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -69,18 +72,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.MarkerComposable
-import com.google.maps.android.compose.rememberMarkerState
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
+import com.kgjr.safecircle.ui.utils.LocationActivityManager
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -88,7 +87,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupScreen(
-    nav: (HomeIds,currentCircleId: String) -> Unit
+    nav: (HomeIds,String) -> Unit
 ) {
     val context  = LocalContext.current
     val viewModel: GroupViewModel = viewModel()
@@ -128,6 +127,16 @@ fun GroupScreen(
             viewModel.clearError()
         }
     }
+    LaunchedEffect(Unit) {
+        LocationActivityManager.initializeNotificationAndWorker(context)
+        val permission = Manifest.permission.ACTIVITY_RECOGNITION
+        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+            LocationActivityManager.startActivityRecognition(context)
+        } else {
+            Log.e("GroupScreen", "ACTIVITY_RECOGNITION permission not granted")
+        }
+    }
+
     LaunchedEffect(Unit) {
         adminId?.let {
             if (userData == null) {
@@ -260,7 +269,9 @@ fun GroupScreen(
                                 }
                             }
                         }else{
-                            UserList(viewModel)
+                            UserList(viewModel, onClick = { userId ->
+                                nav(HomeIds.LOCATION_HISTORY,userId)
+                            })
                         }
                     }
                 },
@@ -283,7 +294,7 @@ fun GroupScreen(
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    MapWithCustomMarker(selectedMapType = selectedMapType, viewModel = viewModel)
+                    HomeScreenMapView(selectedMapType = selectedMapType, viewModel = viewModel)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

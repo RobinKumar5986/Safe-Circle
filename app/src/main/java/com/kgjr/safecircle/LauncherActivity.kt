@@ -8,6 +8,7 @@ import com.kgjr.safecircle.ui.navigationGraph.NavigationDestinations
 import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.utils.NotificationUtils
 import com.kgjr.safecircle.ui.utils.PhysicalActivityUtils
+import com.kgjr.safecircle.ui.utils.isIgnoringBatteryOptimizations
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -18,7 +19,11 @@ class LauncherActivity : ComponentActivity() {
         val destination = if (MainApplication.getGoogleAuthUiClient().getSignedInUser() == null) {
             NavigationDestinations.loginScreenMain
         }
-        else if (!LocationUtils.isLocationPermissionGranted(context) || !NotificationUtils.isNotificationPermissionGranted(context) || !PhysicalActivityUtils.isActivityPermissionGranted(context)){
+        else if (!LocationUtils.isLocationPermissionGranted(context)
+            || !NotificationUtils.isNotificationPermissionGranted(context)
+            || !PhysicalActivityUtils.isActivityPermissionGranted(context)
+            || !isIgnoringBatteryOptimizations(context)
+        ) {
             NavigationDestinations.allPermissionMain
         }
         else {

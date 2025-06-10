@@ -1,8 +1,10 @@
 package com.kgjr.safecircle.ui.viewmodels
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.recaptcha.internal.zzsj
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -10,6 +12,7 @@ import com.google.firebase.database.MutableData
 import com.google.firebase.database.Transaction
 import com.google.firebase.database.ValueEventListener
 import com.kgjr.safecircle.MainApplication
+import com.kgjr.safecircle.models.ArchiveLocationData
 import com.kgjr.safecircle.models.Group
 import com.kgjr.safecircle.models.GroupDataWithLocation
 import com.kgjr.safecircle.models.GroupMember
@@ -19,6 +22,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,8 +39,10 @@ class GroupViewModel @Inject constructor() : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _isLoadForLocation = MutableStateFlow(false)
-    val isLoadForLocation: StateFlow<Boolean> = _isLoadForLocation
+    private val _isLoadingForArchive = MutableStateFlow(false)
+    val isLoadingForArchive: StateFlow<Boolean> = _isLoadingForArchive
+
+
 
     private val _user = MutableStateFlow<User?>(null)
     val user: StateFlow<User?> = _user
@@ -58,9 +64,14 @@ class GroupViewModel @Inject constructor() : ViewModel() {
 
     private val listeners = mutableMapOf<String, ValueEventListener>()
 
+    private val _archiveLocationList = MutableStateFlow<List<List<ArchiveLocationData>>>(emptyList())
+    val archiveLocationList: StateFlow<List<List<ArchiveLocationData>>> = _archiveLocationList
+
+
     init {
         loadFromSharedPrefs()
     }
+
     private fun loadFromSharedPrefs() {
         _user.value = sharedPref.getUser()
         _group.value = sharedPref.getGroup()
@@ -299,8 +310,8 @@ class GroupViewModel @Inject constructor() : ViewModel() {
     fun fetchGroupUsersWithLocation() {
         val groupValue = _group.value ?: return
         val usersMap = groupValue.users ?: return
-        val dbRef = FirebaseDatabase.getInstance().getReference("Location").child("LastRecordedLocation")
-        _isLoadForLocation.value = true
+        val dbRef =
+            FirebaseDatabase.getInstance().getReference("Location").child("LastRecordedLocation")
         for ((userId, userData) in usersMap) {
             val listener = object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -309,8 +320,8 @@ class GroupViewModel @Inject constructor() : ViewModel() {
                     } else {
                         null
                     }
-                    Log.d("Success" , snapshot.toString())
-                    if(locationData != null) {
+                    Log.d("Success", snapshot.toString())
+                    if (locationData != null) {
                         val groupWithLocationItem = GroupDataWithLocation(
                             id = userId,
                             userData = userData,
@@ -334,11 +345,80 @@ class GroupViewModel @Inject constructor() : ViewModel() {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                   Log.d("Failure" , "Failed the fetch the location details from the db")
+                    Log.d("Failure", "Failed the fetch the location details from the db")
                 }
             }
             listeners[userId] = listener
             dbRef.child(userId).addValueEventListener(listener)
+        }
+    }
+
+    fun fetchLocationsFromArchive(userId: String) {
+        val dbRef = FirebaseDatabase.getInstance().getReference("Location")
+            .child("LocationArchive")
+            .child(userId)
+
+        val calendar = Calendar.getInstance()
+        val allDaysData = mutableListOf<Pair<String, List<ArchiveLocationData>>>()
+
+        var pendingCalls = 5
+        _isLoadingForArchive.value = true
+
+        repeat(5) {
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH) + 1
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val formattedDate = String.format("%04d-%02d-%02d", year, month, day)
+
+            val dayRef = dbRef.child(year.toString())
+                .child(month.toString())
+                .child(day.toString())
+
+            dayRef.get().addOnSuccessListener { snapshot ->
+                val dayList = mutableListOf<ArchiveLocationData>()
+                for (childSnapshot in snapshot.children) {
+                    val dataMap = childSnapshot.value as? Map<*, *> ?: continue
+
+                    val data = ArchiveLocationData(
+                        activity = dataMap["activity"] as? String,
+                        address = dataMap["address"] as? String,
+                        battery = (dataMap["battery"] as? Long)?.toInt(),
+                        latitude = dataMap["latitude"] as? Double,
+                        longitude = dataMap["longitude"] as? Double,
+                        timeStamp = dataMap["timeStamp"] as? Long
+                    )
+
+                    dayList.add(data)
+                }
+
+                if (dayList.isNotEmpty()) {
+                    allDaysData.add(Pair(formattedDate, dayList))
+                }
+
+                pendingCalls--
+                if (pendingCalls == 0) {
+                    val sortedData = allDaysData
+                        .sortedByDescending { it.first }
+                        .map { it.second }
+
+                    _archiveLocationList.value = sortedData
+                    _isLoadingForArchive.value = false
+                }
+
+            }.addOnFailureListener {
+                pendingCalls--
+                if (pendingCalls == 0) {
+                    val sortedData = allDaysData
+                        .sortedByDescending { it.first }
+                        .map { it.second }
+
+                    _archiveLocationList.value = sortedData
+                    _isLoadingForArchive.value = false
+                }
+            }
+
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
         }
     }
 

@@ -94,7 +94,7 @@ class SharedPreferenceManager(context: Context) {
     }
 
     fun getLastActivityStatus(): String? {
-        return sharedPreferences.getString("last_activity_status", null)
+        return sharedPreferences.getString("last_activity_status", "N.A")
     }
 
     // ---- Last Activity Timestamp ----

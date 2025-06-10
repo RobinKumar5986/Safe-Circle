@@ -1,5 +1,7 @@
 package com.kgjr.safecircle.ui.layouts
 
+import android.Manifest
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -11,11 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -27,47 +34,83 @@ import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.utils.NotificationUtils
 import com.kgjr.safecircle.ui.utils.PermissionItemData
 import com.kgjr.safecircle.ui.utils.PhysicalActivityUtils
+import com.kgjr.safecircle.ui.utils.isIgnoringBatteryOptimizations
+import com.kgjr.safecircle.ui.utils.requestIgnoreBatteryOptimizations
 
 @Composable
 fun AllPermissionScreen(
     nav: () -> Unit
-){
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val locationPermissionGranted = remember { mutableStateOf(LocationUtils.isLocationPermissionGranted(context)) }
-    val notificationPermissionGranted = remember { mutableStateOf(NotificationUtils.isNotificationPermissionGranted(context)) }
-    val activityPermissionGranted = remember { mutableStateOf(PhysicalActivityUtils.isActivityPermissionGranted(context))
+    var isForegroundLocationGranted by remember { mutableStateOf(LocationUtils.isLocationPermissionGranted(context)) }
+    var isBackgroundLocationGranted by remember { mutableStateOf(LocationUtils.isBackgroundLocationPermissionGranted(context)) }
+    var notificationPermissionGranted by remember { mutableStateOf(NotificationUtils.isNotificationPermissionGranted(context)) }
+    var activityPermissionGranted by remember { mutableStateOf(PhysicalActivityUtils.isActivityPermissionGranted(context)) }
+    var isBatteryOptimizationIgnored by remember { mutableStateOf(isIgnoringBatteryOptimizations(context)) }
+
+    var showBackgroundLocationRationaleDialog by remember { mutableStateOf(false) }
+
+    val backgroundLocationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { }
+
+    val foregroundLocationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        isForegroundLocationGranted = fineLocationGranted || coarseLocationGranted
+
+        if (isForegroundLocationGranted) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isBackgroundLocationGranted) {
+                backgroundLocationPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            } else {
+                isBackgroundLocationGranted = true
+            }
+        }
     }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        notificationPermissionGranted.value = isGranted
+        notificationPermissionGranted = isGranted
     }
+
     val activityPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        activityPermissionGranted.value = isGranted
+        activityPermissionGranted = isGranted
     }
+
     LaunchedEffect(
-        locationPermissionGranted.value,
-        notificationPermissionGranted.value,
-        activityPermissionGranted.value
+        isForegroundLocationGranted,
+        isBackgroundLocationGranted,
+        notificationPermissionGranted,
+        activityPermissionGranted,
+        isBatteryOptimizationIgnored
     ) {
-        if (locationPermissionGranted.value &&
-            notificationPermissionGranted.value &&
-            activityPermissionGranted.value
+        val allLocationGranted = isForegroundLocationGranted &&
+                (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || isBackgroundLocationGranted)
+
+        if (allLocationGranted &&
+            notificationPermissionGranted &&
+            activityPermissionGranted &&
+            isBatteryOptimizationIgnored
         ) {
             nav()
         }
     }
-    // @Note: this is for on resume code (Life cycle controller)
+
     DisposableEffect(Unit) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                locationPermissionGranted.value = LocationUtils.isLocationPermissionGranted(context)
-                notificationPermissionGranted.value = NotificationUtils.isNotificationPermissionGranted(context)
+                isForegroundLocationGranted = LocationUtils.isLocationPermissionGranted(context)
+                isBackgroundLocationGranted = LocationUtils.isBackgroundLocationPermissionGranted(context)
+                notificationPermissionGranted = NotificationUtils.isNotificationPermissionGranted(context)
+                activityPermissionGranted = PhysicalActivityUtils.isActivityPermissionGranted(context)
+                isBatteryOptimizationIgnored = isIgnoringBatteryOptimizations(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -75,20 +118,35 @@ fun AllPermissionScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    val permissionItems = listOf( PermissionItemData(
+
+    val permissionItems = listOf(
+        PermissionItemData(
             icon = Icons.Default.LocationOn,
             title = "Location Permission",
             description = "Required to access your location even in background",
-            isGranted = locationPermissionGranted.value,
+            isGranted = isForegroundLocationGranted &&
+                    (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || isBackgroundLocationGranted),
             onClick = {
-                LocationUtils.openAppSettings(context)
+                val currentFineGranted = LocationUtils.isFineLocationPermissionGranted(context)
+                val currentCoarseGranted = LocationUtils.isCoarseLocationPermissionGranted(context)
+
+                if (!currentFineGranted || !currentCoarseGranted) {
+                    foregroundLocationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isBackgroundLocationGranted) {
+                    showBackgroundLocationRationaleDialog = true
+                }
             }
         ),
         PermissionItemData(
             icon = Icons.Default.Notifications,
             title = "Notification Permission",
             description = "Required to send local notifications",
-            isGranted = notificationPermissionGranted.value,
+            isGranted = notificationPermissionGranted,
             onClick = {
                 if (NotificationUtils.isNotificationPermissionRequired()) {
                     notificationPermissionLauncher.launch(NotificationUtils.getNotificationPermission())
@@ -99,19 +157,55 @@ fun AllPermissionScreen(
             painter = R.drawable.walk,
             title = "Physical Activity Permission",
             description = "Required to detect physical activity like walking or running",
-            isGranted = activityPermissionGranted.value,
+            isGranted = activityPermissionGranted,
             onClick = {
                 if (PhysicalActivityUtils.isActivityPermissionRequired()) {
                     activityPermissionLauncher.launch(PhysicalActivityUtils.getActivityPermission())
                 }
             }
+        ),
+        PermissionItemData(
+            painter = R.drawable.outline_battery_status_good_24,
+            title = "Battery Optimization",
+            description = "Required to run the app without background restrictions",
+            isGranted = isBatteryOptimizationIgnored,
+            onClick = {
+                requestIgnoreBatteryOptimizations(context)
+            }
         )
-
     )
+
+    if (showBackgroundLocationRationaleDialog) {
+        AlertDialog(
+            onDismissRequest = { showBackgroundLocationRationaleDialog = false },
+            title = { Text("Background Location Access Needed") },
+            text = {
+                Text(
+                    "To ensure your location is accurately updated even when the app is closed " +
+                            "for features like family safety and alerts, " +
+                            "please grant 'Allow all the time' location permission. " +
+                            "Tap 'Open Settings', then go to 'Permissions', 'Location', and select 'Allow all the time'."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showBackgroundLocationRationaleDialog = false
+                    LocationUtils.openAppSettings(context)
+                }) {
+                    Text("Open Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackgroundLocationRationaleDialog = false }) {
+                    Text("Not Now")
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
-    ){
+    ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Spacer(modifier = Modifier.height(24.dp))
             permissionItems.forEach { item ->
@@ -123,8 +217,8 @@ fun AllPermissionScreen(
                     isGranted = item.isGranted,
                     onClick = item.onClick
                 )
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
-
     }
 }

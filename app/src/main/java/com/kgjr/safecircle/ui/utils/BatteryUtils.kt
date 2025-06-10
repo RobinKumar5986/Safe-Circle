@@ -1,9 +1,15 @@
 package com.kgjr.safecircle.ui.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.BatteryManager
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
+import android.util.Log
 import androidx.core.content.ContextCompat
 
 fun getBatteryPercentage(context: Context): Int {
@@ -23,4 +29,29 @@ fun getBatteryPercentage(context: Context): Int {
         }
     }
     return -1
+
 }
+
+fun isIgnoringBatteryOptimizations(context: Context): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        powerManager.isIgnoringBatteryOptimizations(context.packageName)
+    } else {
+        true
+    }
+}
+
+@SuppressLint("BatteryLife")
+fun requestIgnoreBatteryOptimizations(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+            data = Uri.parse("package:${context.packageName}")
+        }
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+        } else {
+            Log.w("BatteryUtils", "Cannot resolve ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS")
+        }
+    }
+}
+

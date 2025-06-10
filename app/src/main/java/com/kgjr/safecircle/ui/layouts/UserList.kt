@@ -18,9 +18,8 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun UserList(viewModel: GroupViewModel) {
+fun UserList(viewModel: GroupViewModel, onClick: (String) -> Unit) {
     val userDataWithLocation by viewModel.groupWithLocation.collectAsState()
-
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -35,13 +34,20 @@ fun UserList(viewModel: GroupViewModel) {
                 "Since ${format.format(date)}"
             } ?: "Time unknown"
             val battery = data.locationData.battery?.toString() ?: "N/A"
+            val lat = data.locationData.latitude ?: 0.0
+            val lng = data.locationData.longitude ?: 0.0
 
             UserStatus(
                 name = name,
                 imageUrl = imageUrl,
                 location = location,
                 timestamp = timestamp,
-                batteryPercentage = battery
+                batteryPercentage = battery,
+                lat = lat,
+                lng = lng,
+                onClick = {
+                    onClick(data.id)
+                }
             )
 
             HorizontalDivider(
