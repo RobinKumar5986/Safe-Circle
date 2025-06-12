@@ -150,6 +150,7 @@ fun GroupScreen(
             }
         }
     }
+
     BackHandler(enabled = isCreateNewCircleTopSheet) {
         isCreateNewCircleTopSheet = false
     }

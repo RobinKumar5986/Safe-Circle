@@ -120,7 +120,11 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
             if(userId== null)
                 shouldUpdate = false
 
-
+            val lastRecordedTime  = sharedPreferenceManager.getLastActivityTimestamp()
+            val currentTime = System.currentTimeMillis()
+            if(sharedPreferenceManager.getLastActivityStatus() == "IN_VEHICLE" && activityType == "IN_VEHICLE" && (currentTime - lastRecordedTime) < 10_000){
+                shouldUpdate = false
+            }
             if (shouldUpdate ) {
 //                getAndLogAddressFromLatLng(
 //                    lat = currentLocation?.latitude ?: 0.0,

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,12 +22,14 @@ import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.theme.googleButtonCole
 import com.kgjr.safecircle.ui.utils.Auth.google_sign_in.SignInState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 @Composable
 fun SignUpView(
     signInState: SignInState,
+    googleButtonClick: MutableState<Boolean>,
     nav: () -> Unit,
     onSignInClick: () -> Unit
 ) {
@@ -62,59 +65,68 @@ fun SignUpView(
                 painter = painterResource(id = R.drawable.main_app_logo_empty_background),
                 contentDescription = "App Logo",
                 modifier = Modifier
-                    .padding(top =  100.dp)
-                    .size(200.dp)
+                    .padding(top = 100.dp)
+                    .size(150.dp)
                     .padding(bottom = 16.dp)
             )
 
             // App Slogan
-            Text(
-                text = "Safe Circle Keeps you Safe",
-                color = Color.Black,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-
-            // Made with Love
-            Text(
-                text = "Made with Love",
-                color = Color.White,
-                fontWeight = FontWeight.Normal,
-                fontSize = 16.sp
-            )
+//            Text(
+//                text = "Safe Circle Keeps you Safe",
+//                color = Color.Black,
+//                fontWeight = FontWeight.Bold,
+//                fontSize = 14.sp,
+//                modifier = Modifier.padding(bottom = 4.dp)
+//            )
+//
+//            // Made with Love
+//            Text(
+//                text = "Made with Love",
+//                color = Color.White,
+//                fontWeight = FontWeight.Normal,
+//                fontSize = 16.sp
+//            )
 
         }
-
-        // Google Sign-Up Button
-        Button(
-            onClick = {
-                onSignInClick()
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(56.dp)
-                .shadow(8.dp, shape = RoundedCornerShape(8.dp)),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = googleButtonCole)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+        if (googleButtonClick.value) {
+            // Show loading indicator instead of button
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            )
+        } else {
+            // Google Sign-Up Button
+            Button(
+                onClick = {
+                    googleButtonClick.value = true
+                    onSignInClick()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .shadow(8.dp, shape = RoundedCornerShape(8.dp)),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = googleButtonCole)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.google_symbol),
-                    contentDescription = "Google Icon",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(end = 8.dp)
-                )
-                Text(
-                    text = "Sign Up",
-                    color = Color.White
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.google_symbol),
+                        contentDescription = "Google Icon",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .padding(end = 8.dp)
+                    )
+                    Text(
+                        text = "Sign Up",
+                        color = Color.White
+                    )
+                }
             }
         }
     }

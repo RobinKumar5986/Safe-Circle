@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,7 +54,8 @@ fun NavGraphBuilder.authGraph(navController: NavController) {
                     Toast.makeText(context,"Success", Toast.LENGTH_SHORT).show()
                 }
             }
-            SignUpView(signInState = state,nav = {
+            val googleButtonClick = remember { mutableStateOf(false) }
+            SignUpView(signInState = state,googleButtonClick = googleButtonClick,nav = {
                 if(!LocationUtils.isLocationPermissionGranted(context) || !NotificationUtils.isNotificationPermissionGranted(context) || !PhysicalActivityUtils.isActivityPermissionGranted(context)) {
                     navController.navigate(NavigationDestinations.allPermissionMain) {
                         popUpTo(navController.graph.id) {
@@ -69,11 +72,21 @@ fun NavGraphBuilder.authGraph(navController: NavController) {
             }) {
                 coroutineScope.launch {
                     val signInIntentSender = MainApplication.getGoogleAuthUiClient().signIn()
+                    if (signInIntentSender == null) {
+                        Toast.makeText(
+                            context,
+                            "No Google account found.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        googleButtonClick.value = false
+                        return@launch
+                    }
                     launcher.launch(
                         IntentSenderRequest.Builder(
-                            signInIntentSender ?: return@launch
+                            signInIntentSender
                         ).build()
                     )
+                    googleButtonClick.value = false
                 }
             }
         }

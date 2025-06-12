@@ -25,6 +25,7 @@ fun NavGraphBuilder.homeScreenGraph(navController: NavController){
                     navController.navigate("LOCATION_HISTORY/$dynamicId")
                 }
             }
+//            PushNotificationScreen()
         }
         composable(NavigationDestinations.invitationScreen,
             arguments = listOf(navArgument("groupId") { type = NavType.StringType })) { backStackEntry ->
