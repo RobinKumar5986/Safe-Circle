@@ -131,6 +131,7 @@ fun GroupScreen(
         LocationActivityManager.initializeNotificationAndWorker(context)
         val permission = Manifest.permission.ACTIVITY_RECOGNITION
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+            delay(5000)//5 - sec delay
             LocationActivityManager.startActivityRecognition(context)
         } else {
             Log.e("GroupScreen", "ACTIVITY_RECOGNITION permission not granted")
@@ -358,121 +359,110 @@ fun GroupScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .wrapContentHeight()
                             .heightIn(max = 450.dp)
-                            .background(Color.White)
                             .shadow(4.dp),
                         color = Color.White,
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
                                 .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Box {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 25.dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        currentGroupId?.let {
+                                            nav(HomeIds.ADD_TO_CIRCLE, it)
+                                        }
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.add_friend),
+                                        contentDescription = "Add Friend",
+                                        colorFilter = ColorFilter.tint(baseThemeColor),
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .padding(2.dp)
+                                    )
+                                }
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = 16.dp,
+                                        end = 16.dp,
+                                        bottom = 16.dp
+                                    )
+                            ) {
+                                groupList.forEach { item ->
+                                    Text(
+                                        item.name,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                viewModel.loadGroupById(item.id) {
+                                                    isCreateNewCircleTopSheet = false
+                                                }
+                                            }
+                                            .padding(16.dp)
+                                    )
+                                    HorizontalDivider(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 24.dp),
+                                        thickness = 0.5.dp,
+                                        color = Color.Gray.copy(alpha = 0.5f)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(top = 25.dp),
-                                    horizontalArrangement = Arrangement.End
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    IconButton(
+                                    Button(
                                         onClick = {
-                                            currentGroupId?.let{
-                                                nav(HomeIds.ADD_TO_CIRCLE,it)
+                                            isCreateNewCircleTopSheet = false
+                                            createNewCircle = true
+                                            scope.launch {
+                                                delay(10)
+                                                createNewCircleAnimation = true
                                             }
                                         },
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = baseThemeColor)
                                     ) {
-                                        Image(
-                                            painter = painterResource(id = R.drawable.add_friend),
-                                            contentDescription = "Add Friend",
-                                            colorFilter = ColorFilter.tint(baseThemeColor),
-                                            modifier = Modifier
-                                                .size(28.dp)
-                                                .padding(2.dp)
-                                        )
+                                        Text("Create a Circle")
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            isCreateNewCircleTopSheet = false
+                                            joinNewCircle = true
+                                            scope.launch {
+                                                delay(10)
+                                                joinNewCircleAnimation = true
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = baseThemeColor)
+                                    ) {
+                                        Text("Join a Circle")
                                     }
                                 }
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .wrapContentHeight()
-                                        .padding(
-                                            top = 60.dp,
-                                            start = 16.dp,
-                                            end = 16.dp,
-                                            bottom = 16.dp
-                                        )
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .verticalScroll(rememberScrollState())
-                                    ) {
-                                        /**
-                                         * @Mark: All groups list section
-                                         * */
-                                        groupList.forEach { item ->
-                                            Text(
-                                                item.name,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        viewModel.loadGroupById(item.id) {
-                                                            isCreateNewCircleTopSheet = false
-                                                        }
-
-                                                    }
-                                                    .padding(16.dp)
-                                            )
-                                            HorizontalDivider(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 24.dp),
-                                                thickness = 0.5.dp,
-                                                color = Color.Gray.copy(alpha = 0.5f)
-                                            )
-                                        }
-                                    }
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        Button(
-                                            onClick = {
-                                                isCreateNewCircleTopSheet = false
-                                                createNewCircle = true
-                                                scope.launch {
-                                                    delay(10)
-                                                    createNewCircleAnimation = true
-                                                }
-                                            },
-                                            modifier = Modifier.weight(1f),
-                                            colors = ButtonDefaults.buttonColors(containerColor = baseThemeColor)
-                                        ) {
-                                            Text("Create a Circle")
-                                        }
-
-                                        Button(
-                                            onClick = {
-                                                isCreateNewCircleTopSheet = false
-                                                joinNewCircle = true
-                                                scope.launch {
-                                                    delay(10)
-                                                    joinNewCircleAnimation = true
-                                                }
-                                            },
-                                            modifier = Modifier.weight(1f),
-                                            colors = ButtonDefaults.buttonColors(containerColor = baseThemeColor)
-                                        ) {
-                                            Text("Join a Circle")
-                                        }
-                                    }
-                                }
-
-
                             }
                         }
                     }

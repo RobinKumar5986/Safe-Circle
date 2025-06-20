@@ -64,18 +64,10 @@ object LocationActivityManager {
     }
 
     private fun schedulePeriodicNotificationWorker(context: Context) {
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACTIVITY_RECOGNITION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            startActivityRecognition(context)
-        }
+
         val periodicWorkRequest = PeriodicWorkRequestBuilder<PeriodicNotificationWorker>(
             15, TimeUnit.MINUTES
-        )
-            .addTag("PeriodicNotificationWorkerTag")
-            .build()
+        ).addTag("PeriodicNotificationWorkerTag").build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "PeriodicNotificationWorkerTag",

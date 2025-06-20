@@ -44,7 +44,7 @@ class NotificationService(private val context: Context) {
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    fun showWorkerNotification(message: String) {
+    fun showWorkerNotification(message: String,bodyText: String? = null) {
         val intent = Intent(context, LauncherActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -58,6 +58,7 @@ class NotificationService(private val context: Context) {
         val notification = NotificationCompat.Builder(context, UPDATE_LOCATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.main_app_logo_empty_background)
             .setContentTitle(message)
+            .setContentText(bodyText)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)

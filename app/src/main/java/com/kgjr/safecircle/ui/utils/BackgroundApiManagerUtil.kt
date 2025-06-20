@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.annotation.RequiresPermission
 import com.google.firebase.database.FirebaseDatabase
 import com.google.gson.Gson
+import com.kgjr.safecircle.MainApplication
+import com.kgjr.safecircle.models.LocationForApiTest.XyzLocationResponse
 import com.kgjr.safecircle.models.NominatimResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +17,7 @@ import okhttp3.Request
 import java.io.IOException
 import java.util.Calendar
 
-object FirebaseDataUpdateUtils {
+object BackgroundApiManagerUtil {
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun archiveLocationData(
@@ -123,7 +125,6 @@ object FirebaseDataUpdateUtils {
                             "address" to address
                         )
                     }
-
                 locRef.setValue(dataToSet)
                     .addOnSuccessListener {
                         Log.d("Firebase", "Last recorded location saved successfully.")
@@ -140,7 +141,7 @@ object FirebaseDataUpdateUtils {
         }
     }
 
-    fun getAndLogAddressFromLatLng(
+    fun getAndLogAddressFromLatLngNormApi(
         lat: Double,
         lng: Double,
         onSuccess: (NominatimResponse?) -> Unit,
@@ -150,6 +151,9 @@ object FirebaseDataUpdateUtils {
 
         val request = Request.Builder()
             .url(url)
+            .header("User-Agent",
+                MainApplication.getGoogleAuthUiClient().getSignedInUser()?.email.toString()
+            )
             .build()
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -198,6 +202,60 @@ object FirebaseDataUpdateUtils {
                 onSuccess(null)
             } catch (e: Exception) {
                 Log.e("NominatimAPI", "Error parsing response or unexpected data: ${e.message}")
+                e.printStackTrace()
+                onSuccess(null)
+            }
+        }
+    }
+    fun getAndLogAddressFromLatLngXYZApi(
+        lat: Double,
+        lng: Double,
+        onSuccess: (XyzLocationResponse?) -> Unit,
+    ) {
+        val client = OkHttpClient()
+        val url = "https://geocode.xyz/$lat,$lng?geoit=json"
+
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string()
+                    if (responseBody != null) {
+                        Log.d("XYZSimpleAddress", "Raw API Response: $responseBody")
+
+                        val gson = Gson()
+                        val xyzApiResponse =
+                            gson.fromJson(responseBody, XyzLocationResponse::class.java)
+
+                        Log.d(
+                            "XYZSimpleAddress",
+                            "Parsed Display Name: ${xyzApiResponse.standard?.addressT}"
+                        )
+                        Log.d(
+                            "XYZSimpleAddress",
+                            "Parsed Country: ${xyzApiResponse.standard?.countryname}"
+                        )
+                        onSuccess(xyzApiResponse)
+                    } else {
+                        Log.e("XYZSimpleAddress", "Empty response body.")
+                        onSuccess(null)
+                    }
+                } else {
+                    Log.e(
+                        "XYZSimpleAddress",
+                        "API call failed with code: ${response.code}, message: ${response.message}"
+                    )
+                    onSuccess(null)
+                }
+            } catch (e: IOException) {
+                Log.e("XYZSimpleAddress", "Network error: ${e.message}")
+                onSuccess(null)
+            } catch (e: Exception) {
+                Log.e("XYZSimpleAddress", "Error parsing response or unexpected data: ${e.message}")
                 e.printStackTrace()
                 onSuccess(null)
             }

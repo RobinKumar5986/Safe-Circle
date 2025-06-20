@@ -5,8 +5,6 @@ import android.location.Location
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kgjr.safecircle.models.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import androidx.core.content.edit
 
 class SharedPreferenceManager(context: Context) {
@@ -108,10 +106,62 @@ class SharedPreferenceManager(context: Context) {
         return sharedPreferences.getLong("last_activity_timestamp", 0L)
     }
 
+
+    // ---- Last Location When Address is Fetch ----
+    fun saveLastTimeForAddressApi(time: Long) {
+        sharedPreferences.edit{
+            putLong("last_time_for_getting_location", time)
+        }
+    }
+
+    fun getLastTimeForAddressApi(): Long{
+        return sharedPreferences.getLong("last_time_for_getting_location", 0L)
+    }
+
+    // ---- Last Location Address from Nominatim ---
+    fun saveLocationActualAddressForApi(address: String){
+        sharedPreferences.edit{
+            putString("last_location_address_from_nominatim", address)
+        }
+    }
+
+    fun getActualAddressForApi(): String? {
+        return sharedPreferences.getString("last_location_address_from_nominatim", null)
+    }
+
+    // ---- Last Location When API is Called ----
+    /**
+     * @param lat The latitude to save.
+     * @param lng The longitude to save.
+     */
+    fun saveLastLocationLatLngApi(lat: Double, lng: Double) {
+        sharedPreferences.edit {
+            putString("nominatim_latitude", lat.toString())
+            putString("nominatim_longitude", lng.toString())
+        }
+    }
+
+    /**
+     * @return A Location object if a previously saved location is found, otherwise null.
+     */
+    fun getLastLocationLatLngApi(): Location? {
+        val lat = sharedPreferences.getString("nominatim_latitude", null)?.toDoubleOrNull()
+        val lng = sharedPreferences.getString("nominatim_longitude", null)?.toDoubleOrNull()
+
+        return if (lat != null && lng != null) {
+            Location("NominatimSharedPreference").apply {
+                latitude = lat
+                longitude = lng
+            }
+        } else {
+            null
+        }
+    }
+
     // ---- Clear all SharedPreferences data ----//
     fun clearSharedPreference() {
         /**
-        * @Mark: Always call this when we log out of the application.
+        * @Mark: Always call this when we logout of the application.
         * */
         sharedPreferences.edit { clear() }
     }
