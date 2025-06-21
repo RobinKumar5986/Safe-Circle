@@ -80,7 +80,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
 
             if (currentLocation == null) {
                 Log.e("PeriodicWorker", "Current location is null. Cannot update.")
-                notificationService.showWorkerNotification("Location unavailable", "Make sure your location is on for the smooth functioning of the service")
+//                notificationService.showWorkerNotification("Location unavailable", "Make sure your location is on for the smooth functioning of the service")
                 return@getCurrentLocation
             }
             val message = if (activityType == "IN_VEHICLE") {
@@ -95,7 +95,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
 
             var shouldUpdate = false
             var shouldCallAddressApi = false
-            if (lastLocation != null && currentLocation != null) {
+            if (lastLocation != null) {
                 val distance = lastLocation.distanceTo(currentLocation)
                 Log.d("DistanceCheck", "Distance from last location: $distance meters")
                 shouldUpdate = distance >= 15
