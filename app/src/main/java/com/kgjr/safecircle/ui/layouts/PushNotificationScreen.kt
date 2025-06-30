@@ -54,9 +54,9 @@ fun PushNotificationScreen(
                 Firebase.messaging.token.addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         val token = task.result
-                        Log.d("CurrentToken", token)
+                        Log.d("SafeCircle", token)
                     } else {
-                        Log.e("CurrentToken", "Fetching FCM registration token failed", task.exception)
+                        Log.e("SafeCircle", "Fetching FCM registration token failed", task.exception)
                     }
                 }
             },

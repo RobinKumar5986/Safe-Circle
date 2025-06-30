@@ -2,6 +2,7 @@ package com.kgjr.safecircle.ui.utils
 
 import android.Manifest
 import android.content.Context
+import android.location.Location
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import com.google.firebase.database.FirebaseDatabase
@@ -30,61 +31,63 @@ object BackgroundApiManagerUtil {
         sharedPreferenceManager: SharedPreferenceManager,
         notificationService: NotificationService
     ) {
-        LocationUtils.getCurrentLocation(context) { location ->
-            if (location != null) {
-                val lat = location.latitude
-                val lng = location.longitude
-
-                val calendar = Calendar.getInstance()
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH) + 1
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-                val locRef =
-                    FirebaseDatabase.getInstance().getReference("Location").child("LocationArchive")
-                        .child(userId)
-                        .child(year.toString())
-                        .child(month.toString())
-                        .child(day.toString())
-
-                val dataToAppendInTheList =
-                    if(activityType == null) {
-                        mapOf(
-                            "latitude" to lat,
-                            "longitude" to lng,
-                            "timeStamp" to timeStamp,
-                            "activity" to sharedPreferenceManager.getLastActivityStatus(),
-                            "battery" to batteryPercentage,
-                            "address" to address
-                        )
-                    }else{
-                        mapOf(
-                            "latitude" to lat,
-                            "longitude" to lng,
-                            "timeStamp" to timeStamp,
-                            "activity" to activityType,
-                            "battery" to batteryPercentage,
-                            "address" to address
-                        )
-                    }
-                locRef.push().setValue(dataToAppendInTheList)
-                    .addOnSuccessListener {
-                        Log.d("Firebase", "Location data archived successfully.")
-                        notificationService.cancelUpdateLocationNotification()
-                        notificationService.cancelWorkerNotification()
-                        if(activityType != null){
-                            sharedPreferenceManager.saveLastActivityStatus(activityType)
-                        }
-                        sharedPreferenceManager.saveLastLocation(lat = lat, lng = lng)
-                    }
-                    .addOnFailureListener { exception ->
-                        Log.e("Firebase", "Failed to archive location data: ${exception.message}")
-                    }
-            } else {
-                Log.w("Location", "Location is null. Data not archived.")
-            }
-        }
+//        LocationUtils.getCurrentLocation(context) { location ->
+//            if (location != null) {
+//                val lat = location.latitude
+//                val lng = location.longitude
+//
+//                val calendar = Calendar.getInstance()
+//                val year = calendar.get(Calendar.YEAR)
+//                val month = calendar.get(Calendar.MONTH) + 1
+//                val day = calendar.get(Calendar.DAY_OF_MONTH)
+//
+//                val locRef =
+//                    FirebaseDatabase.getInstance().getReference("Location").child("LocationArchive")
+//                        .child(userId)
+//                        .child(year.toString())
+//                        .child(month.toString())
+//                        .child(day.toString())
+//
+//                val dataToAppendInTheList =
+//                    if(activityType == null) {
+//                        mapOf(
+//                            "latitude" to lat,
+//                            "longitude" to lng,
+//                            "timeStamp" to timeStamp,
+//                            "activity" to sharedPreferenceManager.getLastActivityStatus(),
+//                            "battery" to batteryPercentage,
+//                            "address" to address
+//                        )
+//                    }else{
+//                        mapOf(
+//                            "latitude" to lat,
+//                            "longitude" to lng,
+//                            "timeStamp" to timeStamp,
+//                            "activity" to activityType,
+//                            "battery" to batteryPercentage,
+//                            "address" to address
+//                        )
+//                    }
+//                locRef.push().setValue(dataToAppendInTheList)
+//                    .addOnSuccessListener {
+//                        Log.d("Firebase", "Location data archived successfully.")
+//                        notificationService.cancelUpdateLocationNotification()
+//                        notificationService.cancelWorkerNotification()
+//                        if(activityType != null){
+//                            sharedPreferenceManager.saveLastActivityStatus(activityType)
+//                        }
+//                        sharedPreferenceManager.saveLastLocation(lat = lat, lng = lng)
+//                    }
+//                    .addOnFailureListener { exception ->
+//                        Log.e("Firebase", "Failed to archive location data: ${exception.message}")
+//                    }
+//            } else {
+//                Log.w("Location", "Location is null. Data not archived.")
+//            }
+//        }
     }
+
+
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun saveLastRecordedLocation(
@@ -96,48 +99,169 @@ object BackgroundApiManagerUtil {
         timeStamp: Long = System.currentTimeMillis(),
         sharedPreferenceManager: SharedPreferenceManager
     ) {
-        LocationUtils.getCurrentLocation(context) { location ->
-            if (location != null) {
-                val lat = location.latitude
-                val lng = location.longitude
+//        LocationUtils.getCurrentLocation(context) { location ->
+//            if (location != null) {
+//                val lat = location.latitude
+//                val lng = location.longitude
+//
+//                val locRef = FirebaseDatabase.getInstance().getReference("Location")
+//                    .child("LastRecordedLocation")
+//                    .child(userId)
+//
+//                val dataToSet =
+//                    if(activityType == null) {
+//                        mapOf(
+//                            "latitude" to lat,
+//                            "longitude" to lng,
+//                            "timeStamp" to timeStamp,
+//                            "activity" to sharedPreferenceManager.getLastActivityStatus(),
+//                            "battery" to batteryPercentage,
+//                            "address" to address
+//                        )
+//                    }else{
+//                        mapOf(
+//                            "latitude" to lat,
+//                            "longitude" to lng,
+//                            "timeStamp" to timeStamp,
+//                            "activity" to activityType,
+//                            "battery" to batteryPercentage,
+//                            "address" to address
+//                        )
+//                    }
+//                locRef.setValue(dataToSet)
+//                    .addOnSuccessListener {
+//                        Log.d("Firebase", "Last recorded location saved successfully.")
+//                    }
+//                    .addOnFailureListener { exception ->
+//                        Log.e(
+//                            "Firebase",
+//                            "Failed to save last recorded location: ${exception.message}"
+//                        )
+//                    }
+//            } else {
+//                Log.w("Location", "Location is null. Last recorded location not saved.")
+//            }
+//        }
+    }
 
-                val locRef = FirebaseDatabase.getInstance().getReference("Location")
-                    .child("LastRecordedLocation")
+    fun archiveLocationDataV2(
+        userId: String,
+        activityType: String?,
+        batteryPercentage: Int,
+        address: String,
+        timeStamp: Long = System.currentTimeMillis(),
+        sharedPreferenceManager: SharedPreferenceManager,
+        notificationService: NotificationService,
+        currentLocation: Location?,
+        onCompletion: () -> Unit
+    ) {
+        Log.d("FirebaseV2", "In Location Archive...")
+        currentLocation?.let {  location ->
+            val lat = location.latitude
+            val lng = location.longitude
+
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH) + 1
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val locRef =
+                FirebaseDatabase.getInstance().getReference("Location").child("LocationArchive")
                     .child(userId)
+                    .child(year.toString())
+                    .child(month.toString())
+                    .child(day.toString())
 
-                val dataToSet =
-                    if(activityType == null) {
-                        mapOf(
-                            "latitude" to lat,
-                            "longitude" to lng,
-                            "timeStamp" to timeStamp,
-                            "activity" to sharedPreferenceManager.getLastActivityStatus(),
-                            "battery" to batteryPercentage,
-                            "address" to address
-                        )
-                    }else{
-                        mapOf(
-                            "latitude" to lat,
-                            "longitude" to lng,
-                            "timeStamp" to timeStamp,
-                            "activity" to activityType,
-                            "battery" to batteryPercentage,
-                            "address" to address
-                        )
+            val dataToAppendInTheList =
+                if(activityType == null) {
+                    mapOf(
+                        "latitude" to lat,
+                        "longitude" to lng,
+                        "timeStamp" to timeStamp,
+                        "activity" to sharedPreferenceManager.getLastActivityStatus(),
+                        "battery" to batteryPercentage,
+                        "address" to address
+                    )
+                }else{
+                    mapOf(
+                        "latitude" to lat,
+                        "longitude" to lng,
+                        "timeStamp" to timeStamp,
+                        "activity" to activityType,
+                        "battery" to batteryPercentage,
+                        "address" to address
+                    )
+                }
+            locRef.push().setValue(dataToAppendInTheList)
+                .addOnSuccessListener {
+                    Log.d("FirebaseV2", "Location data archived successfully.")
+                    notificationService.cancelUpdateLocationNotification()
+                    notificationService.cancelWorkerNotification()
+                    if(activityType != null){
+                        sharedPreferenceManager.saveLastActivityStatus(activityType)
                     }
-                locRef.setValue(dataToSet)
-                    .addOnSuccessListener {
-                        Log.d("Firebase", "Last recorded location saved successfully.")
-                    }
-                    .addOnFailureListener { exception ->
-                        Log.e(
-                            "Firebase",
-                            "Failed to save last recorded location: ${exception.message}"
-                        )
-                    }
-            } else {
-                Log.w("Location", "Location is null. Last recorded location not saved.")
-            }
+                    sharedPreferenceManager.saveLastLocation(lat = lat, lng = lng)
+                    onCompletion()
+                }
+                .addOnFailureListener { exception ->
+                    Log.e("FirebaseV2", "Failed to archive location data: ${exception.message}")
+                    onCompletion()
+                }
+
+        }
+    }
+
+    fun saveLastRecordedLocationV2(
+        userId: String,
+        activityType: String?,
+        batteryPercentage: Int,
+        address: String,
+        timeStamp: Long = System.currentTimeMillis(),
+        sharedPreferenceManager: SharedPreferenceManager,
+        currentLocation: Location?,
+        onCompletion: () -> Unit
+    ) {
+        currentLocation?.let {  location ->
+            val lat = location.latitude
+            val lng = location.longitude
+
+            val locRef = FirebaseDatabase.getInstance().getReference("Location")
+                .child("LastRecordedLocation")
+                .child(userId)
+
+            val dataToSet =
+                if(activityType == null) {
+                    mapOf(
+                        "latitude" to lat,
+                        "longitude" to lng,
+                        "timeStamp" to timeStamp,
+                        "activity" to sharedPreferenceManager.getLastActivityStatus(),
+                        "battery" to batteryPercentage,
+                        "address" to address
+                    )
+                }else{
+                    mapOf(
+                        "latitude" to lat,
+                        "longitude" to lng,
+                        "timeStamp" to timeStamp,
+                        "activity" to activityType,
+                        "battery" to batteryPercentage,
+                        "address" to address
+                    )
+                }
+            locRef.setValue(dataToSet)
+                .addOnSuccessListener {
+                    Log.d("FirebaseV2", "Last recorded location saved successfully.")
+                    onCompletion()
+                }
+                .addOnFailureListener { exception ->
+                    Log.e(
+                        "FirebaseV2",
+                        "Failed to save last recorded location: ${exception.message}"
+                    )
+                    onCompletion()
+                }
+
         }
     }
 
@@ -207,6 +331,8 @@ object BackgroundApiManagerUtil {
             }
         }
     }
+
+
     fun getAndLogAddressFromLatLngXYZApi(
         lat: Double,
         lng: Double,

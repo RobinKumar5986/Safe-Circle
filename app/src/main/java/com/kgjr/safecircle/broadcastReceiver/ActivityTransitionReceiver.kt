@@ -40,18 +40,18 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
 
             val type = getActivityType(activity.type)
             val confidence = activity.confidence
-            Log.d("ActivityReceiver", "Detected activity: $type with confidence: $confidence")
+            Log.d("SafeCircle", "Detected activity: $type with confidence: $confidence")
             val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
             try {
                 fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                     showNotification(context, type)
                 }.addOnFailureListener {
-                    Log.e("ActivityReceiver", "Failed to get location: ${it.message}")
+                    Log.e("SafeCircle", "Failed to get location: ${it.message}")
                 }
             } catch (e: SecurityException) {
                 e.printStackTrace()
-                Log.e("ActivityReceiver", "Missing location permission.")
+                Log.e("SafeCircle", "Missing location permission.")
             }
         }
     }
@@ -79,7 +79,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
         LocationUtils.getCurrentLocation(context) { currentLocation ->
 
             if (currentLocation == null) {
-                Log.e("PeriodicWorker", "Current location is null. Cannot update.")
+                Log.e("SafeCircle", "Current location is null. Cannot update.")
 //                notificationService.showWorkerNotification("Location unavailable", "Make sure your location is on for the smooth functioning of the service")
                 return@getCurrentLocation
             }
@@ -97,7 +97,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
             var shouldCallAddressApi = false
             if (lastLocation != null) {
                 val distance = lastLocation.distanceTo(currentLocation)
-                Log.d("DistanceCheck", "Distance from last location: $distance meters")
+                Log.d("SafeCircle", "Distance from last location: $distance meters")
                 shouldUpdate = distance >= 15
             }else{
                 shouldUpdate = true
@@ -159,7 +159,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
 //                            val options = listOfNotNull(mainAddress, city, country)
 //                            val address = options.maxByOrNull { it.length } ?: ""
                             val address = addressData.displayName
-                            Log.d("XYZSimpleAddress", "Resolved Longest Address: $address")
+                            Log.d("SafeCircle", "Resolved Longest Address: $address")
 
                             sharedPreferenceManager.saveLastTimeForAddressApi(currentTime)
                             sharedPreferenceManager.saveLocationActualAddressForApi(address)

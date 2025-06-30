@@ -13,6 +13,14 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Foreground Service Permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <!-- Alarm Permission -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!--Boot Permission-->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".MainApplication"
@@ -45,17 +53,34 @@
             android:theme="@style/Theme.SafeCircle"
             tools:ignore="RedundantLabel">
         </activity>
-        <receiver android:name="com.kgjr.safecircle.broadcastReceiver.ActivityTransitionReceiver"
-            android:exported="true"
-            tools:ignore="ExportedReceiver" />
+<!--        <receiver android:name="com.kgjr.safecircle.broadcastReceiver.ActivityTransitionReceiver"-->
+<!--            android:exported="true"-->
+<!--            tools:ignore="ExportedReceiver" />-->
+<!--        <receiver-->
+<!--            android:name=".broadcastReceiver.BootReceiverRestarter"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
         <receiver
-            android:name=".broadcastReceiver.BootReceiverRestarter"
+            android:name=".broadcastReceiver.AlarmBootReceiver"
+            android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".broadcastReceiver.AlarmReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver" />
+        <service
+            android:name=".service.AlarmForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
     </application>
 
 </manifest>

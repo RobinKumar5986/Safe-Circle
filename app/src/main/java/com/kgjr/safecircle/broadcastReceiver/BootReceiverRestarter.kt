@@ -13,7 +13,7 @@ class BootReceiverRestarter : BroadcastReceiver() {
     @RequiresPermission(Manifest.permission.ACTIVITY_RECOGNITION)
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
-            Log.d("BootReceiver", "Boot completed - re-registering activity updates")
+            Log.d("SafeCircle", "Boot completed - re-registering activity updates")
             val activityRecognitionClient = ActivityRecognition.getClient(context)
 
             val pendingIntent = PendingIntent.getBroadcast(
@@ -25,10 +25,10 @@ class BootReceiverRestarter : BroadcastReceiver() {
 
             activityRecognitionClient.requestActivityUpdates(3000, pendingIntent)
                 .addOnSuccessListener {
-                    Log.d("BootReceiver", "Successfully re-registered activity updates")
+                    Log.d("SafeCircle", "Successfully re-registered activity updates")
                 }
                 .addOnFailureListener {
-                    Log.e("BootReceiver", "Failed to re-register activity updates", it)
+                    Log.e("SafeCircle", "Failed to re-register activity updates", it)
                 }
         }
     }

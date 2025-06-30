@@ -78,6 +78,7 @@ import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
+import com.kgjr.safecircle.ui.utils.AndroidAlarmScheduler
 import com.kgjr.safecircle.ui.utils.LocationActivityManager
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 import kotlinx.coroutines.delay
@@ -115,6 +116,8 @@ fun GroupScreen(
     val groupList by viewModel.groupList.collectAsState()
     val currentSelectedGroup by viewModel.group.collectAsState()
     val currentGroupId by viewModel.currentGroupId.collectAsState()
+    val scheduler = remember { AndroidAlarmScheduler(context) }
+
 
     val alpha by animateFloatAsState(
         targetValue = targetAlpha,
@@ -129,12 +132,13 @@ fun GroupScreen(
     LaunchedEffect(Unit) {
         LocationActivityManager.initializeNotificationAndWorker(context)
         val permission = Manifest.permission.ACTIVITY_RECOGNITION
-        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-            delay(5000)//5 - sec delay
-            LocationActivityManager.startActivityRecognition(context)
-        } else {
-            Log.e("GroupScreen", "ACTIVITY_RECOGNITION permission not granted")
-        }
+        scheduler.scheduleAlarm(10)
+//        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+//            delay(5000)//5 - sec delay
+//            LocationActivityManager.startActivityRecognition(context)
+//        } else {
+//            Log.e("SafeCircle", "ACTIVITY_RECOGNITION permission not granted")
+//        }
     }
 
     LaunchedEffect(Unit) {

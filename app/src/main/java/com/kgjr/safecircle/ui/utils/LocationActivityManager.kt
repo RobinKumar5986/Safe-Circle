@@ -22,28 +22,28 @@ object LocationActivityManager {
 
     fun initializeNotificationAndWorker(context: Context) {
         createNotificationChannel(context)
-        schedulePeriodicNotificationWorker(context)
+//        schedulePeriodicNotificationWorker(context)
     }
 
     @RequiresPermission(Manifest.permission.ACTIVITY_RECOGNITION)
     fun startActivityRecognition(context: Context) {
-        val activityRecognitionClient = ActivityRecognition.getClient(context)
-        val intent = Intent(context, ActivityTransitionReceiver::class.java)
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-        )
-
-        activityRecognitionClient.requestActivityUpdates(3000, pendingIntent)
-            .addOnSuccessListener {
-                Log.d("LocationActivityManager", "Activity updates requested successfully")
-            }
-            .addOnFailureListener {
-                Log.e("LocationActivityManager", "Failed to request activity updates", it)
-            }
+//        val activityRecognitionClient = ActivityRecognition.getClient(context)
+//        val intent = Intent(context, ActivityTransitionReceiver::class.java)
+//
+//        val pendingIntent = PendingIntent.getBroadcast(
+//            context,
+//            0,
+//            intent,
+//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+//        )
+//
+//        activityRecognitionClient.requestActivityUpdates(3000, pendingIntent)
+//            .addOnSuccessListener {
+//                Log.d("LocationActivityManager", "Activity updates requested successfully")
+//            }
+//            .addOnFailureListener {
+//                Log.e("LocationActivityManager", "Failed to request activity updates", it)
+//            }
     }
 
     private fun createNotificationChannel(context: Context) {
@@ -63,14 +63,14 @@ object LocationActivityManager {
 
     private fun schedulePeriodicNotificationWorker(context: Context) {
 
-        val periodicWorkRequest = PeriodicWorkRequestBuilder<PeriodicNotificationWorker>(
-            15, TimeUnit.MINUTES
-        ).addTag("PeriodicNotificationWorkerTag").build()
-
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "PeriodicNotificationWorkerTag",
-            ExistingPeriodicWorkPolicy.KEEP,
-            periodicWorkRequest
-        )
+//        val periodicWorkRequest = PeriodicWorkRequestBuilder<PeriodicNotificationWorker>(
+//            15, TimeUnit.MINUTES
+//        ).addTag("PeriodicNotificationWorkerTag").build()
+//
+//        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+//            "PeriodicNotificationWorkerTag",
+//            ExistingPeriodicWorkPolicy.KEEP,
+//            periodicWorkRequest
+//        )
     }
 }
