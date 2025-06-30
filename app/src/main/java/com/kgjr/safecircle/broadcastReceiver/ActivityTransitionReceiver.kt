@@ -45,7 +45,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
 
             try {
                 fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                    showNotification(context, type)
+                    updateLocation(context, type)
                 }.addOnFailureListener {
                     Log.e("SafeCircle", "Failed to get location: ${it.message}")
                 }
@@ -72,7 +72,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    private fun showNotification(
+    private fun updateLocation(
         context: Context,
         activityType: String
     ) {
