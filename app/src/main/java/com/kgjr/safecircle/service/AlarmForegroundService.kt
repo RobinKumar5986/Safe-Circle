@@ -19,6 +19,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.kgjr.safecircle.MainApplication
+import com.kgjr.safecircle.broadcastReceiver.ActivityTransitionReceiver
 import com.kgjr.safecircle.ui.utils.AndroidAlarmScheduler
 import com.kgjr.safecircle.ui.utils.BackgroundApiManagerUtil
 import com.kgjr.safecircle.ui.utils.NotificationService
@@ -31,7 +32,7 @@ import java.util.concurrent.TimeUnit
 class AlarmForegroundService : Service() {
 
     companion object {
-        lateinit var sharedPreferenceManager: SharedPreferenceManager
+        private lateinit var sharedPreferenceManager: SharedPreferenceManager
     }
 
     private lateinit var scheduler: AndroidAlarmScheduler
@@ -54,7 +55,7 @@ class AlarmForegroundService : Service() {
 
         startForeground(
             UPDATE_LOCATION_NOTIFICATION_ID,
-            notificationService.getUpdateLocationNotification("Updating Location... 10s")
+            notificationService.getUpdateLocationNotification("Updating Location...")
         )
 
         // Check for location permissions
@@ -94,24 +95,31 @@ class AlarmForegroundService : Service() {
 
     private fun startLocationUpdates() {
         val locationRequest =
-            LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, TimeUnit.SECONDS.toMillis(1))
-                .setMinUpdateIntervalMillis(TimeUnit.SECONDS.toMillis(1))
+            LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, TimeUnit.SECONDS.toMillis(5))
+                .setMinUpdateIntervalMillis(TimeUnit.SECONDS.toMillis(5))
+                .setMaxUpdateDelayMillis(TimeUnit.SECONDS.toMillis(10))
                 .build()
 
         locationCallback = object : LocationCallback() {
             @RequiresPermission(allOf = [Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
             override fun onLocationResult(locationResult: LocationResult) {
                 val location = locationResult.lastLocation
-                if (location != null) {
-                    updateLocation(context = applicationContext, activityType = activityType, currentLocation = location) {
 
+                if (location != null && location.accuracy <= 10.0f && System.currentTimeMillis() - location.time < TimeUnit.MINUTES.toMillis(1) && !sharedPreferenceManager.getIsUpdateLocationApiCalled()) {
+                    updateLocation(
+                        context = applicationContext,
+                        activityType = activityType,
+                        currentLocation = location
+                    ) {
                         Log.d("SafeCircle", "Service stopped after location update")
+                        sharedPreferenceManager.saveIsUpdateLocationApiCalled(false)
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopForeground(STOP_FOREGROUND_DETACH)
                         stopSelf()
                     }
                     stopLocationUpdates()
                 } else {
+                    stopLocationUpdates()
                     notificationService.cancelUpdateLocationNotification()
                     Log.e("SafeCircle", "Location is null")
                     stopForeground(STOP_FOREGROUND_REMOVE)
@@ -128,6 +136,7 @@ class AlarmForegroundService : Service() {
                 Looper.getMainLooper()
             )
         } catch (e: SecurityException) {
+            stopLocationUpdates()
             Log.e("SafeCircle", "SecurityException: ${e.message}")
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopForeground(STOP_FOREGROUND_DETACH)
@@ -184,7 +193,10 @@ class AlarmForegroundService : Service() {
 
         val currentTime = System.currentTimeMillis()
         val lastRecordedTime = sharedPreferenceManager.getLastActivityTimestamp()
-        if (sharedPreferenceManager.getLastActivityStatus() == "IN_VEHICLE" && activityType == "IN_VEHICLE" && (currentTime - lastRecordedTime) < 10_000) {
+//        if (sharedPreferenceManager.getLastActivityStatus() == "IN_VEHICLE" && activityType == "IN_VEHICLE" && (currentTime - lastRecordedTime) < 10_000) {
+//            shouldUpdate = false
+//        }
+        if ((currentTime - lastRecordedTime) < 10_000) {
             shouldUpdate = false
         }
         if (shouldUpdate) {
@@ -203,6 +215,31 @@ class AlarmForegroundService : Service() {
                     shouldCallAddressApi = true
                 }
             }
+            var checkinAddress = "N.A"
+            val placeCheckins = sharedPreferenceManager.getPlaceCheckins()
+            for (place in placeCheckins) {
+                val result = FloatArray(1)
+
+                Location.distanceBetween(
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    place.lat,
+                    place.lng,
+                    result
+                )
+
+                val distanceInFeet = result[0] * 3.28084f
+
+                if (distanceInFeet <= place.radiusInFeet) {
+                    checkinAddress = place.placeName
+                    break
+                }
+            }
+            if(checkinAddress != "N.A"){
+                shouldCallAddressApi = false
+            }else{
+                checkinAddress = lastAddressFromApi ?: "N.A"
+            }
             if (shouldCallAddressApi) {
                 BackgroundApiManagerUtil.getAndLogAddressFromLatLngNormApi(
                     lat = currentLocation.latitude,
@@ -215,6 +252,7 @@ class AlarmForegroundService : Service() {
 
                         sharedPreferenceManager.saveLastTimeForAddressApi(currentTime)
                         sharedPreferenceManager.saveLocationActualAddressForApi(address)
+                        sharedPreferenceManager.saveIsUpdateLocationApiCalled(true) // @Mark: to make sure the api is been called one at a time.
                         sharedPreferenceManager.saveLastLocationLatLngApi(
                             lat = currentLocation.latitude,
                             lng = currentLocation.longitude
@@ -238,36 +276,30 @@ class AlarmForegroundService : Service() {
                             sharedPreferenceManager = sharedPreferenceManager,
                             currentLocation = currentLocation
                         ){
-//
 //                            onCompletion()
-
                         }
                         sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
                     } else {
                         BackgroundApiManagerUtil.archiveLocationDataV2(
                             userId = userId!!,
                             activityType = activityType,
-                            address = lastAddressFromApi ?: "N.A",
+                            address = checkinAddress,
                             batteryPercentage = batterPercentage,
                             sharedPreferenceManager = sharedPreferenceManager,
                             notificationService = notificationService,
                             currentLocation = currentLocation
                         ){
-
 //                            onCompletion()
-
                         }
                         BackgroundApiManagerUtil.saveLastRecordedLocationV2(
                             userId = userId,
                             activityType = activityType,
-                            address = lastAddressFromApi ?: "N.A",
+                            address =  checkinAddress,
                             batteryPercentage = batterPercentage,
                             sharedPreferenceManager = sharedPreferenceManager,
                             currentLocation = currentLocation
                         ){
-
                             onCompletion()
-
                         }
                         sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
                     }
@@ -276,7 +308,7 @@ class AlarmForegroundService : Service() {
                 BackgroundApiManagerUtil.archiveLocationDataV2(
                     userId = userId!!,
                     activityType = activityType,
-                    address = lastAddressFromApi ?: "N.A",
+                    address = checkinAddress,
                     batteryPercentage = batterPercentage,
                     sharedPreferenceManager = sharedPreferenceManager,
                     notificationService = notificationService,
@@ -287,7 +319,7 @@ class AlarmForegroundService : Service() {
                 BackgroundApiManagerUtil.saveLastRecordedLocationV2(
                     userId = userId,
                     activityType = activityType,
-                    address = lastAddressFromApi ?: "N.A",
+                    address = checkinAddress,
                     batteryPercentage = batterPercentage,
                     sharedPreferenceManager = sharedPreferenceManager,
                     currentLocation = currentLocation

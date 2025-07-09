@@ -1,5 +1,6 @@
 package com.kgjr.safecircle.ui.layouts
 
+import android.location.Location
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -30,11 +31,17 @@ import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.models.ArchiveLocationData
+import com.kgjr.safecircle.models.StayPoint
 import com.kgjr.safecircle.theme.primaryVariant
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun LocationMap(
@@ -48,14 +55,62 @@ fun LocationMap(
     val coroutineScope = rememberCoroutineScope()
 
     val screenWidthPx = with(density) { configuration.screenWidthDp.dp.roundToPx() }
-    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.roundToPx() }
-
-    val overlayHeightPx = with(density) { bottomOverlayHeightDp.dp.roundToPx() }
-    val visibleMapHeightPx = screenHeightPx - overlayHeightPx
+    val visibleMapHeightPx = with(density) {
+        (configuration.screenHeightDp.dp - bottomOverlayHeightDp.dp).roundToPx()
+    }
 
     // Keep track of bounds of selected path for re-centering
     val initialBounds = remember { mutableStateOf<LatLngBounds?>(null) }
-    // Show button only when bounds are available
+
+    // Calculate stay points (longer than 20 min, >100m apart)
+    val stayPoints = remember(selectedGroupIndex) {
+        val selectedPath = locationHistory.getOrNull(selectedGroupIndex) ?: emptyList()
+        if (selectedPath.isEmpty()) return@remember emptyList()
+
+        val minStayDuration = 20 * 60 * 1000 // 20 minutes in ms
+        val maxDistanceMeters = 100.0
+
+        buildList {
+            var startIndex = 0
+            var startTime = selectedPath[0].timeStamp ?: return@buildList
+
+            for (i in 1 until selectedPath.size) {
+                val prevLoc = selectedPath[startIndex]
+                val currLoc = selectedPath[i]
+
+                // Skip if either location lacks valid coordinates or timestamp
+                if (prevLoc.latitude == null || prevLoc.longitude == null ||
+                    currLoc.latitude == null || currLoc.longitude == null ||
+                    currLoc.timeStamp == null) continue
+
+                // Calculate distance between points
+                val distance = FloatArray(1)
+                Location.distanceBetween(
+                    prevLoc.latitude, prevLoc.longitude,
+                    currLoc.latitude, currLoc.longitude,
+                    distance
+                )
+
+                // If distance > 100m or last point, check duration
+                if (distance[0] > maxDistanceMeters || i == selectedPath.size - 1) {
+                    val endTime = currLoc.timeStamp
+                    val duration = endTime - startTime
+
+                    if (duration >= minStayDuration) {
+                        add(
+                            StayPoint(
+                                location = prevLoc,
+                                startTime = startTime,
+                                endTime = endTime
+                            )
+                        )
+                    }
+                    startIndex = i
+                    startTime = currLoc.timeStamp
+                }
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
@@ -68,6 +123,7 @@ fun LocationMap(
             val selectedPath = locationHistory.getOrNull(selectedGroupIndex)
 
             if (!selectedPath.isNullOrEmpty()) {
+                // Draw polyline
                 val points = selectedPath.mapNotNull { loc ->
                     val lat = loc.latitude
                     val lng = loc.longitude
@@ -81,6 +137,7 @@ fun LocationMap(
                         width = 5f
                     )
 
+                    // Set initial bounds
                     LaunchedEffect(selectedGroupIndex) {
                         val boundsBuilder = LatLngBounds.Builder()
                         points.forEach { boundsBuilder.include(it) }
@@ -98,11 +155,39 @@ fun LocationMap(
                         )
                     }
                 }
+
+                // Add markers for stay points
+                stayPoints.forEach { stayPoint ->
+                    val position = stayPoint.location.let { loc ->
+                        LatLng(loc.latitude!!, loc.longitude!!)
+                    }
+                    val address = stayPoint.location.address
+                    val title = if (address.isNullOrBlank() || address == "N.A") {
+                        "${stayPoint.location.latitude}, ${stayPoint.location.longitude}"
+                    } else {
+                        address
+                            .trim()
+                            .split(",")
+                            .take(4)
+                            .joinToString(", ")
+                    }
+
+                    val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                    val timeRange = "Stayed here form ${timeFormatter.format(Date(stayPoint.startTime))} - ${timeFormatter.format(Date(stayPoint.endTime))}"
+                    Marker(
+                        state = MarkerState(position = position),
+                        title = title,
+                        snippet = timeRange,
+                        onInfoWindowClick = {
+                            // Optional: Add custom action on info window click
+                        }
+                    )
+                }
             }
         }
 
         AnimatedVisibility(
-            visible = true,
+            visible = initialBounds.value != null,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier

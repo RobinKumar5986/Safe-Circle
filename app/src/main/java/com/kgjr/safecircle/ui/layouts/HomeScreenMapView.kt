@@ -5,7 +5,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -86,26 +88,21 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
     LaunchedEffect(cameraPositionState.isMoving) {
         if (!cameraPositionState.isMoving && initialBounds.value != null && groupWithLocation.isNotEmpty()) {
             val currentCameraPosition = cameraPositionState.position.target
-            val currentZoom = cameraPositionState.position.zoom
-
             val relaxedBounds = initialBounds.value?.let {
                 LatLngBounds.Builder()
-                    .include(LatLng(it.southwest.latitude - 0.01, it.southwest.longitude - 0.01))
-                    .include(LatLng(it.northeast.latitude + 0.01, it.northeast.longitude + 0.01))
+                    .include(LatLng(it.southwest.latitude - 0.05, it.southwest.longitude - 0.05))
+                    .include(LatLng(it.northeast.latitude + 0.05, it.northeast.longitude + 0.05))
                     .build()
             }
-
-            shouldShowReCenterButton = if (relaxedBounds != null) {
-                !relaxedBounds.contains(currentCameraPosition) || currentZoom < (cameraPositionState.position.zoom - 1f)
-            } else {
-                false
-            }
+            shouldShowReCenterButton = relaxedBounds?.contains(currentCameraPosition)?.not() == true
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(fraction = 0.67f),
             uiSettings = MapUiSettings(zoomControlsEnabled = false),
             properties = MapProperties(mapType = selectedMapType),
             cameraPositionState = cameraPositionState
@@ -121,9 +118,9 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
                 val markerState = remember(groupData.id, lat, lng) {
                     MarkerState(position = LatLng(lat, lng))
                 }
-                if(groupData.locationData.activity.equals("ON_FOOT")){
+                if (groupData.locationData.activity.equals("ON_FOOT")) {
                     activityIcon = R.drawable.footprints
-                }else if(groupData.locationData.activity.equals("IN_VEHICLE")){
+                } else if (groupData.locationData.activity.equals("IN_VEHICLE")) {
                     activityIcon = R.drawable.car
                 }
 
@@ -166,9 +163,32 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
                     }
                 }
             }
+
+            // Adjust camera to fit all markers with extra top padding
+            LaunchedEffect(groupWithLocation) {
+                if (groupWithLocation.isNotEmpty()) {
+                    val boundsBuilder = LatLngBounds.Builder()
+                    groupWithLocation.forEach { groupData ->
+                        val lat = groupData.locationData.latitude
+                        val lng = groupData.locationData.longitude
+                        if (lat != null && lng != null) {
+                            boundsBuilder.include(LatLng(lat, lng))
+                        }
+                    }
+                    val bounds = boundsBuilder.build()
+                    initialBounds.value = bounds
+                    cameraPositionState.animate(
+                        CameraUpdateFactory.newLatLngBounds(
+                            bounds,
+                           300
+                        ),
+                        durationMs = 1000
+                    )
+                }
+            }
         }
 
-        // Re-center button positioned above the specified Row
+        // Re-center button positioned within the map area (unchanged)
         AnimatedVisibility(
             visible = shouldShowReCenterButton,
             enter = fadeIn(),
@@ -182,11 +202,6 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
                 onClick = {
                     coroutineScope.launch {
                         initialBounds.value?.let { bounds ->
-                            val center = bounds.center
-                            cameraPositionState.animate(
-                                update = CameraUpdateFactory.newLatLng(center),
-                                durationMs = 700
-                            )
                             cameraPositionState.animate(
                                 update = CameraUpdateFactory.newLatLngBounds(bounds, 300),
                                 durationMs = 1000
@@ -207,6 +222,5 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
                 )
             }
         }
-
     }
 }

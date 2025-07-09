@@ -3,6 +3,8 @@ package com.kgjr.safecircle.ui.utils
 import android.Manifest
 import android.content.Context
 import android.location.Location
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import com.google.firebase.database.FirebaseDatabase
@@ -156,7 +158,7 @@ object BackgroundApiManagerUtil {
         onCompletion: () -> Unit
     ) {
         Log.d("FirebaseV2", "In Location Archive...")
-        currentLocation?.let {  location ->
+        currentLocation?.let { location ->
             val lat = location.latitude
             val lng = location.longitude
 
@@ -173,7 +175,7 @@ object BackgroundApiManagerUtil {
                     .child(day.toString())
 
             val dataToAppendInTheList =
-                if(activityType == null) {
+                if (activityType == null) {
                     mapOf(
                         "latitude" to lat,
                         "longitude" to lng,
@@ -182,7 +184,7 @@ object BackgroundApiManagerUtil {
                         "battery" to batteryPercentage,
                         "address" to address
                     )
-                }else{
+                } else {
                     mapOf(
                         "latitude" to lat,
                         "longitude" to lng,
@@ -192,22 +194,44 @@ object BackgroundApiManagerUtil {
                         "address" to address
                     )
                 }
+
+            val handler = Handler(Looper.getMainLooper())
+            var completed = false // Flag to ensure onCompletion is called only once
+
+            val timeoutRunnable = Runnable {
+                if (!completed) {
+                    Log.e("FirebaseV2", "Firebase operation timed out after 30 seconds.")
+                    onCompletion()
+                    completed = true
+                }
+            }
+
+            // Post the timeout runnable with a delay of 30 seconds
+            handler.postDelayed(timeoutRunnable, 30000)
+
             locRef.push().setValue(dataToAppendInTheList)
                 .addOnSuccessListener {
-                    Log.d("FirebaseV2", "Location data archived successfully.")
-                    notificationService.cancelUpdateLocationNotification()
-                    notificationService.cancelWorkerNotification()
-                    if(activityType != null){
-                        sharedPreferenceManager.saveLastActivityStatus(activityType)
+                    if (!completed) {
+                        Log.d("FirebaseV2", "Location data archived successfully.")
+                        notificationService.cancelUpdateLocationNotification()
+                        notificationService.cancelWorkerNotification()
+                        if (activityType != null) {
+                            sharedPreferenceManager.saveLastActivityStatus(activityType)
+                        }
+                        sharedPreferenceManager.saveLastLocation(lat = lat, lng = lng)
+                        onCompletion()
+                        completed = true
+                        handler.removeCallbacks(timeoutRunnable)
                     }
-                    sharedPreferenceManager.saveLastLocation(lat = lat, lng = lng)
-                    onCompletion()
                 }
                 .addOnFailureListener { exception ->
-                    Log.e("FirebaseV2", "Failed to archive location data: ${exception.message}")
-                    onCompletion()
+                    if (!completed) {
+                        Log.e("FirebaseV2", "Failed to archive location data: ${exception.message}")
+                        onCompletion()
+                        completed = true
+                        handler.removeCallbacks(timeoutRunnable)
+                    }
                 }
-
         }
     }
 
@@ -221,7 +245,7 @@ object BackgroundApiManagerUtil {
         currentLocation: Location?,
         onCompletion: () -> Unit
     ) {
-        currentLocation?.let {  location ->
+        currentLocation?.let { location ->
             val lat = location.latitude
             val lng = location.longitude
 
@@ -230,7 +254,7 @@ object BackgroundApiManagerUtil {
                 .child(userId)
 
             val dataToSet =
-                if(activityType == null) {
+                if (activityType == null) {
                     mapOf(
                         "latitude" to lat,
                         "longitude" to lng,
@@ -239,7 +263,7 @@ object BackgroundApiManagerUtil {
                         "battery" to batteryPercentage,
                         "address" to address
                     )
-                }else{
+                } else {
                     mapOf(
                         "latitude" to lat,
                         "longitude" to lng,
@@ -249,19 +273,41 @@ object BackgroundApiManagerUtil {
                         "address" to address
                     )
                 }
+
+            val handler = Handler(Looper.getMainLooper())
+            var completed = false // Flag to ensure onCompletion is called only once
+
+            val timeoutRunnable = Runnable {
+                if (!completed) {
+                    Log.e("FirebaseV2", "Firebase operation for last recorded location timed out after 30 seconds.")
+                    onCompletion()
+                    completed = true
+                }
+            }
+
+            // Post the timeout runnable with a delay of 30 seconds
+            handler.postDelayed(timeoutRunnable, 30000) // 30000 milliseconds = 30 seconds
+
             locRef.setValue(dataToSet)
                 .addOnSuccessListener {
-                    Log.d("FirebaseV2", "Last recorded location saved successfully.")
-                    onCompletion()
+                    if (!completed) {
+                        Log.d("FirebaseV2", "Last recorded location saved successfully.")
+                        onCompletion()
+                        completed = true
+                        handler.removeCallbacks(timeoutRunnable)
+                    }
                 }
                 .addOnFailureListener { exception ->
-                    Log.e(
-                        "FirebaseV2",
-                        "Failed to save last recorded location: ${exception.message}"
-                    )
-                    onCompletion()
+                    if (!completed) {
+                        Log.e(
+                            "FirebaseV2",
+                            "Failed to save last recorded location: ${exception.message}"
+                        )
+                        onCompletion()
+                        completed = true
+                        handler.removeCallbacks(timeoutRunnable)
+                    }
                 }
-
         }
     }
 

@@ -1,54 +1,49 @@
 package com.kgjr.safecircle.broadcastReceiver
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.location.Location
 import android.util.Log
 import androidx.annotation.RequiresPermission
-import androidx.core.app.NotificationManagerCompat
 import com.google.android.gms.location.ActivityRecognitionResult
 import com.google.android.gms.location.DetectedActivity
-import com.google.android.gms.location.LocationServices
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.ui.utils.BackgroundApiManagerUtil
 import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.utils.NotificationService
-import com.kgjr.safecircle.ui.utils.NotificationService.Companion.UPDATE_LOCATION_NOTIFICATION_ID
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 import com.kgjr.safecircle.ui.utils.getBatteryPercentage
 import java.util.Calendar
 
 class ActivityTransitionReceiver : BroadcastReceiver() {
     companion object {
-        lateinit var sharedPreferenceManager: SharedPreferenceManager
-
-        @SuppressLint("StaticFieldLeak")
-        lateinit var notificationService: NotificationService
-
+        private lateinit var sharedPreferenceManager: SharedPreferenceManager
     }
-
+    private lateinit var notificationService: NotificationService
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS])
     override fun onReceive(context: Context, intent: Intent) {
-        notificationService = NotificationService(context)
+        //initializing the managers in the starting...
         sharedPreferenceManager = SharedPreferenceManager(context)
+        notificationService = NotificationService(context)
 
         if (ActivityRecognitionResult.hasResult(intent)) {
             val result = ActivityRecognitionResult.extractResult(intent)
             val activity = result!!.mostProbableActivity
-
             val type = getActivityType(activity.type)
             val confidence = activity.confidence
             Log.d("SafeCircle", "Detected activity: $type with confidence: $confidence")
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
             try {
-                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                    updateLocation(context, type)
-                }.addOnFailureListener {
-                    Log.e("SafeCircle", "Failed to get location: ${it.message}")
+                LocationUtils.getCurrentLocation(context) { location ->
+                    location?.let {
+                        updateLocation(context, type, location) {
+
+                        }
+                    }
                 }
+
             } catch (e: SecurityException) {
                 e.printStackTrace()
                 Log.e("SafeCircle", "Missing location permission.")
@@ -71,159 +66,198 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
         }
     }
 
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+//    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+//    private fun updateLocation(
+//        context: Context,
+//        activityType: String
+//    ) {
+//        sharedPreferenceManager = SharedPreferenceManager(context)
+//        print("Looper Status In Activity receiver: ${sharedPreferenceManager.getIsUpdateLocationApiCalledLooper()}")
+//        if (sharedPreferenceManager.getIsUpdateLocationApiCalled() == false) {
+//            Log.d("SafeCircle", "Activity Broadcast Receiver")
+//            val serviceIntent = Intent(context, AlarmForegroundService::class.java).apply {
+//                putExtra("ActivityType", activityType)
+//            }
+//            ContextCompat.startForegroundService(context, serviceIntent)
+//        }
+//    }
+
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun updateLocation(
         context: Context,
-        activityType: String
+        activityType: String,
+        currentLocation: Location,
+        onCompletion: () -> Unit
     ) {
-        LocationUtils.getCurrentLocation(context) { currentLocation ->
+        val userId = MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId
+        val batterPercentage = getBatteryPercentage(context)
+        val lastLocation = sharedPreferenceManager.getLastLocation()
+        val lastActivityTime = sharedPreferenceManager.getLastActivityTimestamp()
+        var shouldUpdate = false
+        var shouldCallAddressApi = false
+        if (lastLocation != null) {
+            val distance = lastLocation.distanceTo(currentLocation)
+            Log.d("SafeCircle", "Distance from last location: $distance meters")
+            shouldUpdate = distance >= 15
+        } else {
+            shouldUpdate = true
+        }
+        //checking if its a new day
+        val lastCal = Calendar.getInstance().apply { timeInMillis = lastActivityTime }
+        val currentCal = Calendar.getInstance()
+        val isNewDay = lastCal.get(Calendar.YEAR) != currentCal.get(Calendar.YEAR) ||
+                lastCal.get(Calendar.DAY_OF_YEAR) != currentCal.get(Calendar.DAY_OF_YEAR)
+        if (isNewDay) {
+            shouldUpdate = true
+        }
+        if (userId == null)
+            shouldUpdate = false
 
-            if (currentLocation == null) {
-                Log.e("SafeCircle", "Current location is null. Cannot update.")
-//                notificationService.showWorkerNotification("Location unavailable", "Make sure your location is on for the smooth functioning of the service")
-                return@getCurrentLocation
-            }
-            val message = if (activityType == "IN_VEHICLE") {
-                "Activating Drive Mode.."
+        val currentTime = System.currentTimeMillis()
+        val lastRecordedTime = sharedPreferenceManager.getLastActivityTimestamp()
+//        if (sharedPreferenceManager.getLastActivityStatus() == "IN_VEHICLE" && activityType == "IN_VEHICLE" && (currentTime - lastRecordedTime) < 10_000) {
+//            shouldUpdate = false
+//        }
+        if ((currentTime - lastRecordedTime) < 10_000) {
+            shouldUpdate = false
+        }
+        if (shouldUpdate) {
+            val notification = notificationService.getUpdateLocationNotification("Checking For Updates...")
+            notificationService.notificationManager.notify(
+                NotificationService.UPDATE_LOCATION_NOTIFICATION_ID,
+                notification
+            )
+
+            val API_CALL_THRESHOLD_MILLIS = 1 * 60 * 1000L
+            val lastTimeApiCalled = sharedPreferenceManager.getLastTimeForAddressApi()
+            val lastApiLatLng = sharedPreferenceManager.getLastLocationLatLngApi()
+            val lastAddressFromApi = sharedPreferenceManager.getActualAddressForApi()
+
+            if (lastAddressFromApi == null || lastTimeApiCalled == 0L || lastApiLatLng == null) {
+                shouldCallAddressApi = true
             } else {
-                "Updating Location..."
-            }
-            val userId = MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId
-            val batterPercentage = getBatteryPercentage(context)
-            val lastLocation = sharedPreferenceManager.getLastLocation()
-            val lastActivityTime = sharedPreferenceManager.getLastActivityTimestamp()
-
-            var shouldUpdate = false
-            var shouldCallAddressApi = false
-            if (lastLocation != null) {
-                val distance = lastLocation.distanceTo(currentLocation)
-                Log.d("SafeCircle", "Distance from last location: $distance meters")
-                shouldUpdate = distance >= 15
-            }else{
-                shouldUpdate = true
-            }
-
-            //checking if its a new day
-            val lastCal = Calendar.getInstance().apply { timeInMillis = lastActivityTime }
-            val currentCal = Calendar.getInstance()
-            val isNewDay = lastCal.get(Calendar.YEAR) != currentCal.get(Calendar.YEAR) ||
-                    lastCal.get(Calendar.DAY_OF_YEAR) != currentCal.get(Calendar.DAY_OF_YEAR)
-            if (isNewDay) {
-                shouldUpdate = true
-            }
-            if(userId== null)
-                shouldUpdate = false
-
-            val currentTime = System.currentTimeMillis()
-            val lastRecordedTime  = sharedPreferenceManager.getLastActivityTimestamp()
-            if(sharedPreferenceManager.getLastActivityStatus() == "IN_VEHICLE" && activityType == "IN_VEHICLE" && (currentTime - lastRecordedTime) < 10_000){
-                shouldUpdate = false
-            }
-            if (shouldUpdate ) {
-
-                val API_CALL_THRESHOLD_MILLIS = 1 * 60 * 1000L
-                val lastTimeApiCalled = sharedPreferenceManager.getLastTimeForAddressApi()
-                val lastApiLatLng = sharedPreferenceManager.getLastLocationLatLngApi()
-                val lastAddressFromApi = sharedPreferenceManager.getActualAddressForApi()
-
-                if(lastAddressFromApi == null || lastTimeApiCalled == 0L || lastApiLatLng == null ){
+                val distance = lastApiLatLng.distanceTo(currentLocation)
+                val timeDifference = currentTime - lastTimeApiCalled
+                if (distance > 100 && timeDifference > API_CALL_THRESHOLD_MILLIS) { //Note: this is the distance in meters
                     shouldCallAddressApi = true
-                }else{
-                    val distance = lastApiLatLng.distanceTo(currentLocation)
-                    val timeDifference = currentTime - lastTimeApiCalled
-                    if(distance > 100 && timeDifference > API_CALL_THRESHOLD_MILLIS){ //Note: this is the distance in meters
-                        shouldCallAddressApi = true
-                    }
-                }
-                val notification = notificationService.getUpdateLocationNotification(message)
-                NotificationManagerCompat.from(context)
-                    .notify(UPDATE_LOCATION_NOTIFICATION_ID, notification)
-                if(shouldCallAddressApi){
-                    BackgroundApiManagerUtil.getAndLogAddressFromLatLngNormApi(
-                        lat = currentLocation.latitude ,
-                        lng = currentLocation.longitude ) { addressData ->
-
-                        if(addressData != null){
-//                            val longestAltAddress = addressData.alt?.loc
-//                                ?.mapNotNull { it.staddress }
-//                                ?.maxByOrNull { it.length }
-//
-//                            val mainAddress = longestAltAddress
-//                                ?: addressData.standard?.staddress
-//                                ?: addressData.standard?.addressT
-//
-//                            val city = addressData.city?.takeIf { it.isNotBlank() }
-//                            val country = addressData.country?.takeIf { it.isNotBlank() }
-//
-//                            // Collect options and choose the one with max length
-//                            val options = listOfNotNull(mainAddress, city, country)
-//                            val address = options.maxByOrNull { it.length } ?: ""
-                            val address = addressData.displayName
-                            Log.d("SafeCircle", "Resolved Longest Address: $address")
-
-                            sharedPreferenceManager.saveLastTimeForAddressApi(currentTime)
-                            sharedPreferenceManager.saveLocationActualAddressForApi(address)
-                            sharedPreferenceManager.saveLastLocationLatLngApi(lat = currentLocation.latitude , lng = currentLocation.longitude)
-                            BackgroundApiManagerUtil.archiveLocationData(
-                                context = context,
-                                userId = userId!!,
-                                activityType = activityType,
-                                address = address,
-                                batteryPercentage = batterPercentage,
-                                sharedPreferenceManager = sharedPreferenceManager,
-                                notificationService = notificationService
-                            )
-                            BackgroundApiManagerUtil.saveLastRecordedLocation(
-                                context = context,
-                                userId = userId,
-                                activityType = activityType,
-                                address = address,
-                                batteryPercentage = batterPercentage,
-                                sharedPreferenceManager = sharedPreferenceManager
-                            )
-                            sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
-                        }else{
-                            BackgroundApiManagerUtil.archiveLocationData(
-                                context = context,
-                                userId = userId!!,
-                                activityType = activityType,
-                                address = lastAddressFromApi ?: "N.A",
-                                batteryPercentage = batterPercentage,
-                                sharedPreferenceManager = sharedPreferenceManager,
-                                notificationService = notificationService
-                            )
-                            BackgroundApiManagerUtil.saveLastRecordedLocation(
-                                context = context,
-                                userId = userId,
-                                activityType = activityType,
-                                address = lastAddressFromApi ?: "N.A",
-                                batteryPercentage = batterPercentage,
-                                sharedPreferenceManager = sharedPreferenceManager
-                            )
-                            sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
-                        }
-                    }
-                }else {
-                    BackgroundApiManagerUtil.archiveLocationData(
-                        context = context,
-                        userId = userId!!,
-                        activityType = activityType,
-                        address = lastAddressFromApi ?: "N.A",
-                        batteryPercentage = batterPercentage,
-                        sharedPreferenceManager = sharedPreferenceManager,
-                        notificationService = notificationService
-                    )
-                    BackgroundApiManagerUtil.saveLastRecordedLocation(
-                        context = context,
-                        userId = userId,
-                        activityType = activityType,
-                        address = lastAddressFromApi ?: "N.A",
-                        batteryPercentage = batterPercentage,
-                        sharedPreferenceManager = sharedPreferenceManager
-                    )
-                    sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
                 }
             }
+            var checkinAddress = "N.A"
+            val placeCheckins = sharedPreferenceManager.getPlaceCheckins()
+            for (place in placeCheckins) {
+                val result = FloatArray(1)
+
+                Location.distanceBetween(
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    place.lat,
+                    place.lng,
+                    result
+                )
+
+                val distanceInFeet = result[0] * 3.28084f
+
+                if (distanceInFeet <= place.radiusInFeet) {
+                    checkinAddress = place.placeName
+                    break
+                }
+            }
+            if(checkinAddress != "N.A"){
+                shouldCallAddressApi = false
+            }else{
+                checkinAddress = lastAddressFromApi ?: "N.A"
+            }
+            if (shouldCallAddressApi) {
+                BackgroundApiManagerUtil.getAndLogAddressFromLatLngNormApi(
+                    lat = currentLocation.latitude,
+                    lng = currentLocation.longitude
+                ) { addressData ->
+
+                    if (addressData != null) {
+                        val address = addressData.displayName
+                        Log.d("SafeCircle", "Resolved Longest Address: $address")
+
+                        sharedPreferenceManager.saveLastTimeForAddressApi(currentTime)
+                        sharedPreferenceManager.saveLocationActualAddressForApi(address)
+                        sharedPreferenceManager.saveIsUpdateLocationApiCalled(true) // @Mark: to make sure the api is been called one at a time.
+                        sharedPreferenceManager.saveLastLocationLatLngApi(
+                            lat = currentLocation.latitude,
+                            lng = currentLocation.longitude
+                        )
+                        BackgroundApiManagerUtil.archiveLocationDataV2(
+                            userId = userId!!,
+                            activityType = activityType,
+                            address = address,
+                            batteryPercentage = batterPercentage,
+                            sharedPreferenceManager = sharedPreferenceManager,
+                            notificationService = notificationService,
+                            currentLocation = currentLocation
+                        ){
+                            onCompletion()
+                        }
+                        BackgroundApiManagerUtil.saveLastRecordedLocationV2(
+                            userId = userId,
+                            activityType = activityType,
+                            address = address,
+                            batteryPercentage = batterPercentage,
+                            sharedPreferenceManager = sharedPreferenceManager,
+                            currentLocation = currentLocation
+                        ){
+//                            onCompletion()
+                        }
+                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
+                    } else {
+                        BackgroundApiManagerUtil.archiveLocationDataV2(
+                            userId = userId!!,
+                            activityType = activityType,
+                            address = checkinAddress,
+                            batteryPercentage = batterPercentage,
+                            sharedPreferenceManager = sharedPreferenceManager,
+                            notificationService = notificationService,
+                            currentLocation = currentLocation
+                        ){
+//                            onCompletion()
+                        }
+                        BackgroundApiManagerUtil.saveLastRecordedLocationV2(
+                            userId = userId,
+                            activityType = activityType,
+                            address = checkinAddress,
+                            batteryPercentage = batterPercentage,
+                            sharedPreferenceManager = sharedPreferenceManager,
+                            currentLocation = currentLocation
+                        ){
+                            onCompletion()
+                        }
+                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
+                    }
+                }
+            } else {
+                BackgroundApiManagerUtil.archiveLocationDataV2(
+                    userId = userId!!,
+                    activityType = activityType,
+                    address = checkinAddress,
+                    batteryPercentage = batterPercentage,
+                    sharedPreferenceManager = sharedPreferenceManager,
+                    notificationService = notificationService,
+                    currentLocation = currentLocation
+                ){
+//                    onCompletion()
+                }
+                BackgroundApiManagerUtil.saveLastRecordedLocationV2(
+                    userId = userId,
+                    activityType = activityType,
+                    address = checkinAddress,
+                    batteryPercentage = batterPercentage,
+                    sharedPreferenceManager = sharedPreferenceManager,
+                    currentLocation = currentLocation
+                ){
+                    onCompletion()
+                }
+                sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
+            }
+        }
+        else{
+            onCompletion()
         }
     }
 

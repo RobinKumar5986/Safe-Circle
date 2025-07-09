@@ -53,18 +53,18 @@
             android:theme="@style/Theme.SafeCircle"
             tools:ignore="RedundantLabel">
         </activity>
-<!--        <receiver android:name="com.kgjr.safecircle.broadcastReceiver.ActivityTransitionReceiver"-->
-<!--            android:exported="true"-->
-<!--            tools:ignore="ExportedReceiver" />-->
-<!--        <receiver-->
-<!--            android:name=".broadcastReceiver.BootReceiverRestarter"-->
-<!--            android:exported="true">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
-<!--            </intent-filter>-->
-<!--        </receiver>-->
+        <receiver android:name="com.kgjr.safecircle.broadcastReceiver.ActivityTransitionReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver" />
         <receiver
-            android:name=".broadcastReceiver.AlarmBootReceiver"
+            android:name=".broadcastReceiver.BootReceiverRestarter"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".broadcastReceiver.AlarmBootReceiverForLooper"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -77,8 +77,19 @@
             android:name=".broadcastReceiver.AlarmReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver" />
+        <receiver
+            android:name=".broadcastReceiver.AlarmReceiverLooper"
+            android:exported="true"
+            tools:ignore="ExportedReceiver" />
+
+
         <service
             android:name=".service.AlarmForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
+
+        <service
+            android:name=".service.AlarmForegroundServiceLooper"
             android:foregroundServiceType="location"
             android:exported="false" />
     </application>

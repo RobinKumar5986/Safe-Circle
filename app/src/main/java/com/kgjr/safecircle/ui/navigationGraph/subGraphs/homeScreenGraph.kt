@@ -9,6 +9,7 @@ import androidx.navigation.navigation
 import com.kgjr.safecircle.ui.layouts.GroupScreen
 import com.kgjr.safecircle.ui.layouts.InviteCodeScreen
 import com.kgjr.safecircle.ui.layouts.LocationHistoryScreen
+import com.kgjr.safecircle.ui.layouts.PlaceCheckInScreen
 import com.kgjr.safecircle.ui.navigationGraph.NavigationDestinations
 
 fun NavGraphBuilder.homeScreenGraph(navController: NavController){
@@ -23,6 +24,8 @@ fun NavGraphBuilder.homeScreenGraph(navController: NavController){
                 }
                 else if (navId == HomeIds.LOCATION_HISTORY){
                     navController.navigate("LOCATION_HISTORY/$dynamicId")
+                }else if (navId == HomeIds.LOCATION_CHECKING_IN_PLACE){
+                    navController.navigate(NavigationDestinations.locationCheckIn)
                 }
             }
 //            PushNotificationScreen()
@@ -40,10 +43,16 @@ fun NavGraphBuilder.homeScreenGraph(navController: NavController){
             LocationHistoryScreen(userId)
 
         }
+        composable(NavigationDestinations.locationCheckIn){
+            PlaceCheckInScreen(){
+                navController.popBackStack()
+            }
+        }
     }
 }
 
 enum class HomeIds{
     ADD_TO_CIRCLE,
-    LOCATION_HISTORY
+    LOCATION_HISTORY,
+    LOCATION_CHECKING_IN_PLACE
 }

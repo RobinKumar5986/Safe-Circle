@@ -1,6 +1,7 @@
 package com.kgjr.safecircle.ui.layouts
 
 import android.content.Intent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,12 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
@@ -117,28 +115,26 @@ fun UserStatus(
                     color = Color.Black
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-//                Icon(
-//                    painter = painterResource(id = R.drawable.outline_signal_wifi_off_24),
-//                    contentDescription = "Wifi off",
-//                    tint = Color.Red.copy(alpha = 0.6f),
-//                    modifier = Modifier.size(16.dp)
-//                )
             }
-            Text(
-                text = "Lat: $lat, Lng: $lng",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Black
-            )
-            // Clickable text for opening map
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
-                        append("Direction")
-                    }
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+
+            if (location != "N.A") {
+                Text(
+                    text = "At $location",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Black
+                )
+            } else {
+                Text(
+                    text = "At: $lat, Lng: $lng",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Black
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
+                    .padding(top = 4.dp)
                     .clickable {
                         val gmmIntentUri = "geo:$lat,$lng?q=$lat,$lng".toUri()
                         val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
@@ -153,13 +149,23 @@ fun UserStatus(
                             context.startActivity(browserIntent)
                         }
                     }
-            )
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.direction),
+                    contentDescription = "Direction Icon",
+                    modifier = Modifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+
             Text(
                 text = timestamp,
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
             )
         }
+
     }
 }
 

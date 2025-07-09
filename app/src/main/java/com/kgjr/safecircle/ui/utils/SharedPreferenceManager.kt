@@ -158,6 +158,72 @@ class SharedPreferenceManager(context: Context) {
         }
     }
 
+    // --- Save Looper Enabled State ---
+    fun saveLooperEnabled(isEnabled: Boolean) {
+        sharedPreferences.edit {
+            putBoolean("is_looper_enabled", isEnabled)
+        }
+    }
+
+    // --- Get Looper Enabled State, default to false ---
+    fun getIsLooperEnabled(): Boolean {
+        return sharedPreferences.getBoolean("is_looper_enabled", false)
+    }
+
+    // --- Save Update Location API is Called or Not---
+    fun saveIsUpdateLocationApiCalled(isEnabled: Boolean) {
+        sharedPreferences.edit {
+            putBoolean("is_update_location_api", isEnabled)
+        }
+    }
+
+    // --- Get Update Location API is Called or Not ---
+    fun getIsUpdateLocationApiCalled(): Boolean {
+        return sharedPreferences.getBoolean("is_update_location_api", false)
+    }
+
+    // --- Save Update Location API is Called or Not For Looper ---
+    fun saveIsUpdateLocationApiCalledLooper(isEnabled: Boolean) {
+        sharedPreferences.edit {
+            putBoolean("is_update_location_api_looper", isEnabled)
+        }
+    }
+
+    // --- Get Update Location API is Called or Not For Looper ---
+    fun getIsUpdateLocationApiCalledLooper(): Boolean {
+        return sharedPreferences.getBoolean("is_update_location_api_looper", false)
+    }
+
+
+    // --- Save Place Check-ins ---
+    fun savePlaceCheckins(placeList: List<SavedPlace>) {
+        val json = gson.toJson(placeList)
+        sharedPreferences.edit { putString("place_checkins", json) }
+    }
+
+
+    fun getPlaceCheckins(): List<SavedPlace> {
+        val json = sharedPreferences.getString("place_checkins", null)
+        return if (json != null) {
+            val type = object : TypeToken<List<SavedPlace>>() {}.type
+            gson.fromJson(json, type)
+        } else {
+            emptyList()
+        }
+    }
+
+    // --- Is Place CheckIn Api Is Called ---
+    fun getIsPlaceCheckInCalled(): Boolean {
+        return sharedPreferences.getBoolean("is_place_checking_in_called", false)
+    }
+
+    // --- Save Update Location API is Called or Not---
+    fun saveIsPlaceCheckInCalled(isEnabled: Boolean) {
+        sharedPreferences.edit {
+            putBoolean("is_place_checking_in_called", isEnabled)
+        }
+    }
+
     // ---- Clear all SharedPreferences data ----//
     fun clearSharedPreference() {
         /**

@@ -149,12 +149,3 @@ fun JoinCircleScreen(onBackPress: () -> Unit,
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun JoinCircleScreenPreview() {
-    JoinCircleScreen(onBackPress = {
-
-    }, onSubmitPress = {
-
-    })
-}

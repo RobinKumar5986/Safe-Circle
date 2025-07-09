@@ -1,10 +1,10 @@
 package com.kgjr.safecircle.ui.viewmodels
 
+import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.recaptcha.internal.zzsj
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -16,8 +16,11 @@ import com.kgjr.safecircle.models.ArchiveLocationData
 import com.kgjr.safecircle.models.Group
 import com.kgjr.safecircle.models.GroupDataWithLocation
 import com.kgjr.safecircle.models.GroupMember
+import com.kgjr.safecircle.models.SavedPlace
+import com.kgjr.safecircle.models.SavedPlaceData
 import com.kgjr.safecircle.models.User
 import com.kgjr.safecircle.models.UserLastLocation
+import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -429,4 +432,134 @@ class GroupViewModel @Inject constructor() : ViewModel() {
         }
         listeners.clear()
     }
+
+    fun savePlace(
+        placeData: SavedPlaceData,
+        userId: String,
+        context: Context
+    ) {
+        _isLoading.value = true
+        val dbRef = FirebaseDatabase.getInstance().getReference("PlaceCheckins").child(userId)
+        val newRef = dbRef.push()
+        val newId = newRef.key ?: return
+
+        val savedPlace = SavedPlace(
+            id = newId,
+            placeName = placeData.placeName,
+            lat = placeData.lat,
+            lng = placeData.lng,
+            radiusInFeet = placeData.radiusInFeet
+        )
+
+        newRef.setValue(savedPlace)
+            .addOnSuccessListener {
+                _isLoading.value = false
+                val sharedPrefManager = SharedPreferenceManager(context)
+                val updatedList = sharedPrefManager.getPlaceCheckins() + savedPlace
+                sharedPrefManager.savePlaceCheckins(updatedList)
+                sharedPrefManager.saveIsPlaceCheckInCalled(true)
+                Toast.makeText(context, "Place saved successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                _isLoading.value = false
+                Toast.makeText(context, "Failed to save place", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    fun updatePlaceCheckingIn(
+        placeId: String,
+        updatedPlaceData: SavedPlaceData,
+        userId: String,
+        context: Context
+    ) {
+        val dbRef = FirebaseDatabase.getInstance()
+            .getReference("PlaceCheckins")
+            .child(userId)
+            .child(placeId)
+
+        _isLoading.value = true
+
+        // Include the ID in the data being saved
+        val updatedPlace = SavedPlace(
+            id = placeId,
+            placeName = updatedPlaceData.placeName,
+            lat = updatedPlaceData.lat,
+            lng = updatedPlaceData.lng,
+            radiusInFeet = updatedPlaceData.radiusInFeet
+        )
+
+        dbRef.setValue(updatedPlace)
+            .addOnSuccessListener {
+                _isLoading.value = false
+
+                val sharedPrefManager = SharedPreferenceManager(context)
+                val existingList = sharedPrefManager.getPlaceCheckins()
+
+                val updatedList = existingList.map {
+                    if (it.id == placeId) updatedPlace else it
+                }
+
+                sharedPrefManager.savePlaceCheckins(updatedList)
+
+                Toast.makeText(context, "Place updated", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                _isLoading.value = false
+                Toast.makeText(context, "Failed to update", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+
+    fun deletePlaceCheckingIn(
+        placeId: String,
+        userId: String,
+        context: Context
+    ) {
+        val dbRef = FirebaseDatabase.getInstance()
+            .getReference("PlaceCheckins")
+            .child(userId)
+            .child(placeId)
+
+        _isLoading.value = true
+        dbRef.removeValue()
+            .addOnSuccessListener {
+                val sharedPrefManager = SharedPreferenceManager(context)
+                val existingList = sharedPrefManager.getPlaceCheckins()
+                val updatedList = existingList.filterNot { it.id == placeId }
+                sharedPrefManager.savePlaceCheckins(updatedList)
+                _isLoading.value = false
+                Toast.makeText(context, "Place deleted", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                _isLoading.value = false
+                Toast.makeText(context, "Failed to delete", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    fun getAllPlaceCheckins(
+        userId: String,
+        context: Context
+    ) {
+        val dbRef = FirebaseDatabase.getInstance()
+            .getReference("PlaceCheckins")
+            .child(userId)
+
+        dbRef.get()
+            .addOnSuccessListener { dataSnapshot ->
+                val placeList = mutableListOf<SavedPlace>()
+                for (child in dataSnapshot.children) {
+                    sharedPref.saveIsPlaceCheckInCalled(true)
+                    val place = child.getValue(SavedPlace::class.java)
+                    if (place != null) {
+                        placeList.add(place)
+                    }
+                }
+                val sharedPrefManager = SharedPreferenceManager(context)
+                sharedPrefManager.savePlaceCheckins(placeList)
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "Failed to load data", Toast.LENGTH_SHORT).show()
+            }
+    }
+
 }

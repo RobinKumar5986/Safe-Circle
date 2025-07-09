@@ -21,7 +21,7 @@ import java.util.Locale
 fun UserList(viewModel: GroupViewModel, onClick: (String) -> Unit) {
     val userDataWithLocation by viewModel.groupWithLocation.collectAsState()
     LazyColumn(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxWidth()
     ) {
         items(userDataWithLocation) { data ->
 

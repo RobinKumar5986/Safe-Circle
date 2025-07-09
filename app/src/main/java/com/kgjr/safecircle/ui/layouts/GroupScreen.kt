@@ -2,6 +2,7 @@ package com.kgjr.safecircle.ui.layouts
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -16,6 +17,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,16 +34,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -78,7 +85,7 @@ import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
-import com.kgjr.safecircle.ui.utils.AndroidAlarmScheduler
+import com.kgjr.safecircle.ui.utils.AndroidAlarmSchedulerLooper
 import com.kgjr.safecircle.ui.utils.LocationActivityManager
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 import kotlinx.coroutines.delay
@@ -116,13 +123,21 @@ fun GroupScreen(
     val groupList by viewModel.groupList.collectAsState()
     val currentSelectedGroup by viewModel.group.collectAsState()
     val currentGroupId by viewModel.currentGroupId.collectAsState()
-    val scheduler = remember { AndroidAlarmScheduler(context) }
+    val scheduler = remember { AndroidAlarmSchedulerLooper(context) }
+    val checkingInListScrollState = rememberScrollState()
 
 
     val alpha by animateFloatAsState(
         targetValue = targetAlpha,
         label = "FadeAnimation"
     )
+    LaunchedEffect(Unit) {
+        if (MainApplication.getSharedPreferenceManager().getIsPlaceCheckInCalled() == false){
+            adminId?.let {
+                viewModel.getAllPlaceCheckins(userId = it,context = context)
+            }
+        }
+    }
     LaunchedEffect(error) {
         if(error != null){
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
@@ -130,18 +145,35 @@ fun GroupScreen(
         }
     }
     LaunchedEffect(Unit) {
+        /**
+         * @Mark: always initialize the below method because it also creates the notification channel.
+         */
         LocationActivityManager.initializeNotificationAndWorker(context)
-        val permission = Manifest.permission.ACTIVITY_RECOGNITION
-        scheduler.scheduleAlarm(10)
-//        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
-//            delay(5000)//5 - sec delay
-//            LocationActivityManager.startActivityRecognition(context)
-//        } else {
-//            Log.e("SafeCircle", "ACTIVITY_RECOGNITION permission not granted")
-//        }
+
+        delay(5000) //delay so all not start at the same time just in case...
+        if(MainApplication.getSharedPreferenceManager().getIsLooperEnabled() == false) {
+            scheduler.scheduleAlarm(1)
+            MainApplication.getSharedPreferenceManager().saveLooperEnabled(true)
+        }
+//         initiate for the current location in just 1 sec
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val permission = Manifest.permission.ACTIVITY_RECOGNITION
+            if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+                delay(5000) // 5-sec delay
+                LocationActivityManager.startActivityRecognition(context)
+            } else {
+                Log.e("SafeCircle", "ACTIVITY_RECOGNITION permission not granted")
+            }
+        } else {
+            Log.d("SafeCircle", "ACTIVITY_RECOGNITION not required for SDK < 29")
+        }
     }
 
+
     LaunchedEffect(Unit) {
+        println("Looper Data")
+        Log.d("SafeCircle", MainApplication.getSharedPreferenceManager().getIsUpdateLocationApiCalledLooper().toString())
+        Log.d("SafeCircle", MainApplication.getSharedPreferenceManager().getIsUpdateLocationApiCalled().toString())
         adminId?.let {
             if (userData == null) {
                 viewModel.loadUserData(userId = adminId)
@@ -261,10 +293,10 @@ fun GroupScreen(
                                 Button(
                                     onClick = {
                                         isCreateNewCircleTopSheet = false
-                                        joinNewCircle = true
+                                        createNewCircle = true
                                         scope.launch {
                                             delay(10)
-                                            joinNewCircleAnimation = true
+                                            createNewCircleAnimation = true
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
@@ -274,9 +306,82 @@ fun GroupScreen(
                                 }
                             }
                         }else{
-                            UserList(viewModel, onClick = { userId ->
-                                nav(HomeIds.LOCATION_HISTORY,userId)
-                            })
+                            Column(
+                                modifier = Modifier.fillMaxSize()
+                            ){
+                                Row(
+                                    modifier = Modifier
+                                        .horizontalScroll(checkingInListScrollState)
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Card(
+                                        shape = RoundedCornerShape(12.dp),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                nav(HomeIds.LOCATION_CHECKING_IN_PLACE,"")
+                                            },
+                                            modifier = Modifier.size(48.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.building),
+                                                contentDescription = "Add Person",
+                                                tint = baseThemeColor,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
+
+                                }
+
+                                Divider(thickness = 1.dp, color = Color.LightGray)
+                                UserList(
+                                    viewModel = viewModel,
+                                    onClick = { userId ->
+                                        nav(HomeIds.LOCATION_HISTORY, userId)
+                                    },
+                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .padding(10.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .clickable {
+                                            currentGroupId?.let {
+                                                nav(HomeIds.ADD_TO_CIRCLE, it)
+                                            }
+                                        }
+                                        .padding(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .clip(CircleShape)
+                                            .background(baseThemeColor.copy(alpha = 0.2f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.outline_supervisor),
+                                            contentDescription = "Add Person",
+                                            tint = baseThemeColor,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = "Add a person",
+                                        color = baseThemeColor,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+
                         }
                     }
                 },
