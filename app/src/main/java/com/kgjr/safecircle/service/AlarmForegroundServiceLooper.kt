@@ -165,6 +165,7 @@ class AlarmForegroundServiceLooper: Service() {
         val batterPercentage = getBatteryPercentage(context)
         val lastLocation = sharedPreferenceManager.getLastLocation()
         val lastActivityTime = sharedPreferenceManager.getLastActivityTimestamp()
+        sharedPreferenceManager.saveIsUpdateLocationApiCalledLooper(true)
         var shouldUpdate = false
         var shouldCallAddressApi = false
         if (lastLocation != null) {
@@ -246,7 +247,6 @@ class AlarmForegroundServiceLooper: Service() {
 
                         sharedPreferenceManager.saveLastTimeForAddressApi(currentTime)
                         sharedPreferenceManager.saveLocationActualAddressForApi(address)
-                        sharedPreferenceManager.saveIsUpdateLocationApiCalledLooper(true)
                         sharedPreferenceManager.saveLastLocationLatLngApi(
                             lat = currentLocation.latitude,
                             lng = currentLocation.longitude

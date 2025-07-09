@@ -171,6 +171,7 @@ class AlarmForegroundService : Service() {
         val batterPercentage = getBatteryPercentage(context)
         val lastLocation = sharedPreferenceManager.getLastLocation()
         val lastActivityTime = sharedPreferenceManager.getLastActivityTimestamp()
+        sharedPreferenceManager.saveIsUpdateLocationApiCalled(true) // @Mark: to make sure the api is been called one at a time.
         var shouldUpdate = false
         var shouldCallAddressApi = false
         if (lastLocation != null) {
@@ -252,7 +253,6 @@ class AlarmForegroundService : Service() {
 
                         sharedPreferenceManager.saveLastTimeForAddressApi(currentTime)
                         sharedPreferenceManager.saveLocationActualAddressForApi(address)
-                        sharedPreferenceManager.saveIsUpdateLocationApiCalled(true) // @Mark: to make sure the api is been called one at a time.
                         sharedPreferenceManager.saveLastLocationLatLngApi(
                             lat = currentLocation.latitude,
                             lng = currentLocation.longitude

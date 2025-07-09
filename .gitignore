@@ -12,4 +12,9 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# ========== Keys & Secrets ==========
 local.properties
+Keys/
+Keys/Untitled
+app/google-services.json
