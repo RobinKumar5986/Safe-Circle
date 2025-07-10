@@ -59,5 +59,10 @@ val LightTextColor = Color(0xFF1C1C1E)
 val DarkTextColor = Color(0xFFF2F2F2)
 val SubtleLightTextColor = Color(0xFF050505)
 val SubtleDarkTextColor = Color(0xFFDDDDDD)
+val blackPurple = Color(0xFF1D0141)
+val titleBackground = Color(0xF0F5F5F5)
+val lightRed = Color(0xFFFFE6E6)
+val buttonLightGray = Color(0xFFF0F0F0)
+
 
 

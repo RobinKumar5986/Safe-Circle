@@ -166,7 +166,7 @@ class AlarmForegroundServiceLooper: Service() {
         val lastLocation = sharedPreferenceManager.getLastLocation()
         val lastActivityTime = sharedPreferenceManager.getLastActivityTimestamp()
         sharedPreferenceManager.saveIsUpdateLocationApiCalledLooper(true)
-        var shouldUpdate = false
+        var shouldUpdate: Boolean
         var shouldCallAddressApi = false
         if (lastLocation != null) {
             val distance = lastLocation.distanceTo(currentLocation)

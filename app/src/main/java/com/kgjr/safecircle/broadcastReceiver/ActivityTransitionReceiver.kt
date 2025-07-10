@@ -27,26 +27,27 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
         //initializing the managers in the starting...
         sharedPreferenceManager = SharedPreferenceManager(context)
         notificationService = NotificationService(context)
+        if (MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId != null){
+            if (ActivityRecognitionResult.hasResult(intent)) {
+                val result = ActivityRecognitionResult.extractResult(intent)
+                val activity = result!!.mostProbableActivity
+                val type = getActivityType(activity.type)
+                val confidence = activity.confidence
+                Log.d("SafeCircle", "Detected activity: $type with confidence: $confidence")
 
-        if (ActivityRecognitionResult.hasResult(intent)) {
-            val result = ActivityRecognitionResult.extractResult(intent)
-            val activity = result!!.mostProbableActivity
-            val type = getActivityType(activity.type)
-            val confidence = activity.confidence
-            Log.d("SafeCircle", "Detected activity: $type with confidence: $confidence")
+                try {
+                    LocationUtils.getCurrentLocation(context) { location ->
+                        location?.let {
+                            updateLocation(context, type, location) {
 
-            try {
-                LocationUtils.getCurrentLocation(context) { location ->
-                    location?.let {
-                        updateLocation(context, type, location) {
-
+                            }
                         }
                     }
-                }
 
-            } catch (e: SecurityException) {
-                e.printStackTrace()
-                Log.e("SafeCircle", "Missing location permission.")
+                } catch (e: SecurityException) {
+                    e.printStackTrace()
+                    Log.e("SafeCircle", "Missing location permission.")
+                }
             }
         }
     }

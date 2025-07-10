@@ -54,6 +54,7 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
 
     val cameraPositionState = rememberCameraPositionState()
     var shouldShowReCenterButton by remember { mutableStateOf(false) }
+    var isMarkerClicked by remember { mutableStateOf(false) }
 
     val initialBounds = remember { mutableStateOf<LatLngBounds?>(null) }
 
@@ -146,7 +147,25 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
                         showMarkerImage,
                         groupData.locationData.timeStamp?.toString() ?: "",
                         groupData.locationData.battery?.toString() ?: ""
-                    )
+                    ),
+                    onClick = {
+                        coroutineScope.launch {
+                            val currentZoom = cameraPositionState.position.zoom
+                            if (currentZoom < 18f) {
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLngZoom(markerState.position, 18f),
+                                    durationMs = 1000
+                                )
+                            } else {
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLng(markerState.position),
+                                    durationMs = 1000
+                                )
+                            }
+                        }
+                        isMarkerClicked = true
+                        false
+                    }
                 ) {
                     if (showMarkerImage) {
                         CustomMapMarker(
@@ -190,7 +209,7 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
 
         // Re-center button positioned within the map area (unchanged)
         AnimatedVisibility(
-            visible = shouldShowReCenterButton,
+            visible = shouldShowReCenterButton || isMarkerClicked,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
@@ -206,6 +225,7 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
                                 update = CameraUpdateFactory.newLatLngBounds(bounds, 300),
                                 durationMs = 1000
                             )
+                            isMarkerClicked = false
                             shouldShowReCenterButton = false
                         }
                     }

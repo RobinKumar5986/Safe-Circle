@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -27,7 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.kgjr.safecircle.MainApplication
+import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

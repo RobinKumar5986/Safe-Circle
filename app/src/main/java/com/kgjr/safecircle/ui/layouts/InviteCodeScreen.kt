@@ -131,11 +131,14 @@ fun InviteCodeScreen(code: String, onBack: () -> Unit = {}) {
                                     .clip(RoundedCornerShape(40.dp))
                                     .background(primaryVariant)
                                     .clickable {
+                                        val message = "If you don't have the app download it from here: https://play.google.com/store/apps/details?id=com.kgjr.safecircle&hl=en" +
+
+                                                " And Join Safe Circle with the Group Code ---> *$code*"
                                         val shareIntent = Intent().apply {
                                             action = Intent.ACTION_SEND
                                             putExtra(
                                                 Intent.EXTRA_TEXT,
-                                                "Join Safe Circle with the Group Code ---> *$code*"
+                                                message
                                             )
                                             type = "text/plain"
                                         }
@@ -163,11 +166,3 @@ fun InviteCodeScreen(code: String, onBack: () -> Unit = {}) {
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun InviteCodeScreenPreview() {
-    // You might want to wrap in your app theme if you have one
-    Surface {
-        InviteCodeScreen(code = "ABC123")
-    }
-}

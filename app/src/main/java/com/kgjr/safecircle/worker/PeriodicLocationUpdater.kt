@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.service.AlarmForegroundService
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 
@@ -18,7 +19,7 @@ class PeriodicLocationUpdater(context: Context, workerParams: WorkerParameters) 
     override suspend fun doWork(): Result {
         return try {
             sharedPreferenceManager = SharedPreferenceManager(applicationContext)
-            if (sharedPreferenceManager.getIsUpdateLocationApiCalled() == false) {
+            if (sharedPreferenceManager.getIsUpdateLocationApiCalled() == false && MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId != null) {
                 Log.d("PeriodicWorker", "doWork() started. Performing location and battery update.")
                 val serviceIntent =
                     Intent(applicationContext, AlarmForegroundService::class.java).apply {

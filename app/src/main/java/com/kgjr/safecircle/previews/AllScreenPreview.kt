@@ -1,9 +1,12 @@
 package com.kgjr.safecircle.previews
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.kgjr.safecircle.ui.layouts.AddPlaceScreen
+import com.kgjr.safecircle.ui.layouts.InviteCodeScreen
 import com.kgjr.safecircle.ui.layouts.JoinCircleScreen
+import com.kgjr.safecircle.ui.layouts.LogoutConfirmationDialog
 import com.kgjr.safecircle.ui.layouts.PlaceCheckInScreen
 
 
@@ -28,6 +31,15 @@ fun PlaceCheckInScreenPreview() {
     )
 }
 
+@Preview(showBackground = true)
+@Composable
+fun InviteCodeScreenPreview() {
+    // You might want to wrap in your app theme if you have one
+    Surface {
+        InviteCodeScreen(code = "ABC123")
+    }
+}
+
 @Preview
 @Composable
 fun AddPlaceScreenPreview(){
@@ -36,4 +48,12 @@ fun AddPlaceScreenPreview(){
     }, onBackPress = {
 
     })
+}
+@Composable
+@Preview(showBackground = true)
+fun LogoutConfirmationDialogPreview() {
+    LogoutConfirmationDialog(
+        onDismiss = {},
+        onConfirmLogout = {}
+    )
 }

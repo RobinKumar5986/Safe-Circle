@@ -1,7 +1,9 @@
 package com.kgjr.safecircle.ui.layouts
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -11,6 +13,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
@@ -24,6 +28,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -78,23 +83,29 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.maps.android.compose.MapType
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
+import com.kgjr.safecircle.models.SettingButtonType
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
 import com.kgjr.safecircle.ui.utils.AndroidAlarmSchedulerLooper
 import com.kgjr.safecircle.ui.utils.LocationActivityManager
+import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
+import com.kgjr.safecircle.LauncherActivity
+import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupScreen(
-    nav: (HomeIds,String) -> Unit
+    nav: (HomeIds, String) -> Unit,
 ) {
     val context  = LocalContext.current
     val viewModel: GroupViewModel = viewModel()
@@ -125,12 +136,22 @@ fun GroupScreen(
     val currentGroupId by viewModel.currentGroupId.collectAsState()
     val scheduler = remember { AndroidAlarmSchedulerLooper(context) }
     val checkingInListScrollState = rememberScrollState()
+    val sharedPreferenceManager = MainApplication.getSharedPreferenceManager()
 
+
+    val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var isSettingsSheetVisible by remember { mutableStateOf(false) }
+    val showLogoutDialog = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val alpha by animateFloatAsState(
         targetValue = targetAlpha,
         label = "FadeAnimation"
     )
+    LaunchedEffect(Unit) {
+        val mapTypeId = sharedPreferenceManager.getMapTypeId()
+        selectedMapType = LocationUtils.getMapTypeFromId(mapTypeId)
+    }
     LaunchedEffect(Unit) {
         if (MainApplication.getSharedPreferenceManager().getIsPlaceCheckInCalled() == false){
             adminId?.let {
@@ -341,7 +362,8 @@ fun GroupScreen(
                                 Divider(thickness = 1.dp, color = Color.LightGray)
                                 UserList(
                                     viewModel = viewModel,
-                                    onClick = { userId ->
+                                    onClick = { userId , imageUrl->
+                                        MainApplication.imageUrl = imageUrl
                                         nav(HomeIds.LOCATION_HISTORY, userId)
                                     },
                                 )
@@ -452,6 +474,33 @@ fun GroupScreen(
                         ) else Modifier
                     )
             ) {
+                AnimatedVisibility(
+                    visible = alpha == 1f,
+                    enter = scaleIn() + fadeIn(),
+                    exit = scaleOut() + fadeOut(),
+                    modifier = Modifier.zIndex(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(start = 25.dp, top = 45.dp)
+                            .size(35.dp)
+                            .clip(CircleShape)
+                            .shadow(elevation = 8.dp, shape = CircleShape)
+                            .background(Color.White)
+                            .clickable {
+                                isSettingsSheetVisible = true
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.setting),
+                            contentDescription = "Settings",
+                            tint = baseThemeColor,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
                 // Sliding sheet (Create New Circle) - below the header
                 AnimatedVisibility(
                     visible = isCreateNewCircleTopSheet,
@@ -634,7 +683,7 @@ fun GroupScreen(
                         val options = listOf(
                             Triple(R.drawable.street, "Auto", MapType.NORMAL),
                             Triple(R.drawable.street, "Street", MapType.TERRAIN),
-                            Triple(R.drawable.satellite, "Satellite", MapType.SATELLITE)
+                            Triple(R.drawable.satellite, "Satellite", MapType.HYBRID)
                         )
 
                         options.forEach { (imageRes, label, mapType) ->
@@ -650,6 +699,8 @@ fun GroupScreen(
                                     modifier = Modifier
                                         .size(90.dp)
                                         .clickable {
+                                            val mapTypeId = LocationUtils.getMapTypeId(mapType)
+                                            sharedPreferenceManager.saveMapTypeId(mapTypeId)
                                             selectedMapType = mapType
                                         }
                                         .border(
@@ -671,4 +722,63 @@ fun GroupScreen(
     } else {
         CustomLoadingScreen()
     }
+    if (showLogoutDialog.value) {
+        LogoutConfirmationDialog(
+            onDismiss = { showLogoutDialog.value = false },
+            onConfirmLogout = {
+                showLogoutDialog.value = false
+                coroutineScope.launch {
+                    MainApplication.getGoogleAuthUiClient().signOut()
+                    sharedPreferenceManager.clearSharedPreference()
+                    val intent = Intent(context, LauncherActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    context.startActivity(intent)
+                }
+            }
+        )
+    }
+
+
+    //@Mark: Setting bottom sheet
+    if (isSettingsSheetVisible) {
+        ModalBottomSheet(
+            onDismissRequest = { isSettingsSheetVisible = false },
+            sheetState = settingsSheetState,
+            containerColor = Color.White,
+            dragHandle = null
+        ) {
+            SettingsSheetContent { selectedType ->
+                when (selectedType) {
+                    SettingButtonType.SHARE_APP -> { val message =
+                        "You Should try SafeCircle! It's a location shearing app that I use with my family and friends: https://play.google.com/store/apps/details?id=com.kgjr.safecircle&hl=en"
+                        val shareIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                message
+                            )
+                            type = "text/plain"
+                        }
+                        context.startActivity(
+                            Intent.createChooser(
+                                shareIntent,
+                                "Share Safe Circle"
+                            )
+                        )
+                    }
+                    SettingButtonType.PRIVACY_SECURITY -> {
+                        val privacyPolicyUrl = "https://sites.google.com/view/kjjrsafecircle/home"
+                        val intent = Intent(Intent.ACTION_VIEW, privacyPolicyUrl.toUri())
+                        context.startActivity(intent)
+                    }
+
+                    SettingButtonType.LOGOUT -> {
+                        showLogoutDialog.value = true
+                    }
+                }
+            }
+        }
+    }
+
 }

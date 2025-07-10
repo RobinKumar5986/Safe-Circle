@@ -4,44 +4,37 @@ import android.location.Location
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import coil.size.Size
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.maps.android.compose.CameraPositionState
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.Polyline
+import com.google.android.gms.maps.model.*
+import com.google.maps.android.compose.*
+import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.models.ArchiveLocationData
 import com.kgjr.safecircle.models.StayPoint
 import com.kgjr.safecircle.theme.primaryVariant
+import com.kgjr.safecircle.ui.utils.LocationUtils
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @Composable
 fun LocationMap(
@@ -59,71 +52,26 @@ fun LocationMap(
         (configuration.screenHeightDp.dp - bottomOverlayHeightDp.dp).roundToPx()
     }
 
-    // Keep track of bounds of selected path for re-centering
     val initialBounds = remember { mutableStateOf<LatLngBounds?>(null) }
+    val profileImageUrl = MainApplication.imageUrl
 
-    // Calculate stay points (longer than 20 min, >100m apart)
-    val stayPoints = remember(selectedGroupIndex) {
-        val selectedPath = locationHistory.getOrNull(selectedGroupIndex) ?: emptyList()
-        if (selectedPath.isEmpty()) return@remember emptyList()
-
-        val minStayDuration = 20 * 60 * 1000 // 20 minutes in ms
-        val maxDistanceMeters = 100.0
-
-        buildList {
-            var startIndex = 0
-            var startTime = selectedPath[0].timeStamp ?: return@buildList
-
-            for (i in 1 until selectedPath.size) {
-                val prevLoc = selectedPath[startIndex]
-                val currLoc = selectedPath[i]
-
-                // Skip if either location lacks valid coordinates or timestamp
-                if (prevLoc.latitude == null || prevLoc.longitude == null ||
-                    currLoc.latitude == null || currLoc.longitude == null ||
-                    currLoc.timeStamp == null) continue
-
-                // Calculate distance between points
-                val distance = FloatArray(1)
-                Location.distanceBetween(
-                    prevLoc.latitude, prevLoc.longitude,
-                    currLoc.latitude, currLoc.longitude,
-                    distance
-                )
-
-                // If distance > 100m or last point, check duration
-                if (distance[0] > maxDistanceMeters || i == selectedPath.size - 1) {
-                    val endTime = currLoc.timeStamp
-                    val duration = endTime - startTime
-
-                    if (duration >= minStayDuration) {
-                        add(
-                            StayPoint(
-                                location = prevLoc,
-                                startTime = startTime,
-                                endTime = endTime
-                            )
-                        )
-                    }
-                    startIndex = i
-                    startTime = currLoc.timeStamp
-                }
-            }
-        }
+    var selectedMapType by remember { mutableStateOf(MapType.NORMAL) }
+    val sharedPreferenceManager = MainApplication.getSharedPreferenceManager()
+    LaunchedEffect(Unit) {
+        val mapTypeId = sharedPreferenceManager.getMapTypeId()
+        selectedMapType = LocationUtils.getMapTypeFromId(mapTypeId)
     }
-
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = 200.dp),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(mapType = MapType.TERRAIN)
+            properties = MapProperties(mapType = selectedMapType)
         ) {
             val selectedPath = locationHistory.getOrNull(selectedGroupIndex)
 
             if (!selectedPath.isNullOrEmpty()) {
-                // Draw polyline
                 val points = selectedPath.mapNotNull { loc ->
                     val lat = loc.latitude
                     val lng = loc.longitude
@@ -137,7 +85,6 @@ fun LocationMap(
                         width = 5f
                     )
 
-                    // Set initial bounds
                     LaunchedEffect(selectedGroupIndex) {
                         val boundsBuilder = LatLngBounds.Builder()
                         points.forEach { boundsBuilder.include(it) }
@@ -156,32 +103,151 @@ fun LocationMap(
                     }
                 }
 
-                // Add markers for stay points
-                stayPoints.forEach { stayPoint ->
-                    val position = stayPoint.location.let { loc ->
-                        LatLng(loc.latitude!!, loc.longitude!!)
+                val stayPoints = remember(selectedGroupIndex) {
+                    val selectedPath = locationHistory.getOrNull(selectedGroupIndex) ?: emptyList()
+                    if (selectedPath.isEmpty()) return@remember emptyList()
+
+                    val minStayDuration = 20 * 60 * 1000
+                    val maxDistanceMeters = 100.0
+
+                    buildList {
+                        var startIndex = 0
+                        var startTime = selectedPath[0].timeStamp ?: return@buildList
+
+                        for (i in 1 until selectedPath.size) {
+                            val prevLoc = selectedPath[startIndex]
+                            val currLoc = selectedPath[i]
+
+                            if (prevLoc.latitude == null || prevLoc.longitude == null ||
+                                currLoc.latitude == null || currLoc.longitude == null ||
+                                currLoc.timeStamp == null
+                            ) continue
+
+                            val distance = FloatArray(1)
+                            Location.distanceBetween(
+                                prevLoc.latitude, prevLoc.longitude,
+                                currLoc.latitude, currLoc.longitude,
+                                distance
+                            )
+
+                            if (distance[0] > maxDistanceMeters || i == selectedPath.size - 1) {
+                                val endTime = currLoc.timeStamp
+                                val duration = endTime - startTime
+
+                                if (duration >= minStayDuration) {
+                                    add(
+                                        StayPoint(
+                                            location = prevLoc,
+                                            startTime = startTime,
+                                            endTime = endTime
+                                        )
+                                    )
+                                }
+                                startIndex = i
+                                startTime = currLoc.timeStamp
+                            }
+                        }
                     }
+                }
+
+                stayPoints.forEachIndexed { index, stayPoint ->
+                    val position = LatLng(stayPoint.location.latitude!!, stayPoint.location.longitude!!)
                     val address = stayPoint.location.address
                     val title = if (address.isNullOrBlank() || address == "N.A") {
                         "${stayPoint.location.latitude}, ${stayPoint.location.longitude}"
                     } else {
-                        address
-                            .trim()
-                            .split(",")
-                            .take(4)
-                            .joinToString(", ")
+                        address.trim().split(",").take(4).joinToString(", ")
                     }
 
                     val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
-                    val timeRange = "Stayed here form ${timeFormatter.format(Date(stayPoint.startTime))} - ${timeFormatter.format(Date(stayPoint.endTime))}"
+                    val timeRange = "Stayed here from ${timeFormatter.format(Date(stayPoint.startTime))} - ${timeFormatter.format(Date(stayPoint.endTime))}"
+                    val icon = if (index == 0) {
+                        BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
+                    } else {
+                        BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                    }
+
+                    val markerState = remember { MarkerState(position = position) }
+
                     Marker(
-                        state = MarkerState(position = position),
+                        state = markerState,
                         title = title,
                         snippet = timeRange,
-                        onInfoWindowClick = {
-                            // Optional: Add custom action on info window click
+                        icon = icon,
+                        onClick = {
+                            coroutineScope.launch {
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLngZoom(position, 18f),
+                                    durationMs = 500
+                                )
+                            }
+                            false
                         }
                     )
+                }
+
+                val painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(profileImageUrl)
+                        .size(Size.ORIGINAL)
+                        .allowHardware(false)
+                        .build()
+                )
+                val showMarkerImage = painter.state is AsyncImagePainter.State.Success
+
+                selectedPath.lastOrNull()?.let { lastLoc ->
+                    if (lastLoc.latitude != null && lastLoc.longitude != null && lastLoc.timeStamp != null) {
+                        val position = LatLng(lastLoc.latitude, lastLoc.longitude)
+                        val customMarkerState = remember { MarkerState(position = position) }
+
+                        val address = lastLoc.address
+                        val title = if (address.isNullOrBlank() || address == "N.A") {
+                            "${lastLoc.latitude}, ${lastLoc.longitude}"
+                        } else {
+                            address.trim().split(",").take(4).joinToString(", ")
+                        }
+
+                        val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                        val timeRange = "Ended at ${timeFormatter.format(Date(lastLoc.timeStamp))}"
+
+                        MarkerComposable(
+                            state = customMarkerState,
+                            title = title,
+                            snippet = timeRange,
+                            keys = arrayOf(
+                                selectedGroupIndex.toString(),
+                                lastLoc.latitude.toString(),
+                                lastLoc.longitude.toString(),
+                                profileImageUrl,
+                                showMarkerImage,
+                                lastLoc.timeStamp.toString(),
+                                lastLoc.battery?.toString() ?: ""
+                            ),
+                            onClick = {
+                                coroutineScope.launch {
+                                    cameraPositionState.animate(
+                                        update = CameraUpdateFactory.newLatLngZoom(position, 18f),
+                                        durationMs = 500
+                                    )
+                                }
+                                false
+                            }
+                        ) {
+                            if (showMarkerImage) {
+                                CustomMapMarker(
+                                    painter = painter,
+                                    iconResId = null
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.LightGray)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

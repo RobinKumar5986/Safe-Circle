@@ -12,6 +12,7 @@ import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.maps.android.compose.MapType
 
 object LocationUtils {
 
@@ -73,6 +74,27 @@ object LocationUtils {
     fun getCurrentLongitude(context: Context, callback: (Double?) -> Unit) {
         getCurrentLocation(context) { location ->
             callback(location?.longitude)
+        }
+    }
+
+    fun getMapTypeFromId(type: Int): MapType {
+        return when (type) {
+            1 -> MapType.NORMAL
+            2 -> MapType.HYBRID
+            3 -> MapType.SATELLITE
+            4 -> MapType.TERRAIN
+            5 -> MapType.NONE
+            else -> MapType.NORMAL
+        }
+    }
+    fun getMapTypeId(mapType: MapType): Int {
+        return when (mapType) {
+            MapType.NORMAL -> 1
+            MapType.HYBRID -> 2
+            MapType.SATELLITE -> 3
+            MapType.TERRAIN -> 4
+            MapType.NONE -> 5
+            else -> 1
         }
     }
 }

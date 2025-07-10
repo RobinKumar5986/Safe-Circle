@@ -19,13 +19,16 @@ fun NavGraphBuilder.homeScreenGraph(navController: NavController){
     ) {
         composable(NavigationDestinations.homeScreen) {
             GroupScreen{ navId, dynamicId ->
-                if(navId ==  HomeIds.ADD_TO_CIRCLE ){
-                    navController.navigate("INVITATION_SCREEN/$dynamicId")
-                }
-                else if (navId == HomeIds.LOCATION_HISTORY){
-                    navController.navigate("LOCATION_HISTORY/$dynamicId")
-                }else if (navId == HomeIds.LOCATION_CHECKING_IN_PLACE){
-                    navController.navigate(NavigationDestinations.locationCheckIn)
+                when (navId) {
+                    HomeIds.ADD_TO_CIRCLE -> {
+                        navController.navigate("INVITATION_SCREEN/$dynamicId")
+                    }
+                    HomeIds.LOCATION_HISTORY -> {
+                        navController.navigate("LOCATION_HISTORY/$dynamicId")
+                    }
+                    HomeIds.LOCATION_CHECKING_IN_PLACE -> {
+                        navController.navigate(NavigationDestinations.locationCheckIn)
+                    }
                 }
             }
 //            PushNotificationScreen()

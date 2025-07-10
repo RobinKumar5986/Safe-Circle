@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.service.AlarmForegroundServiceLooper
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 
@@ -16,7 +17,7 @@ class AlarmReceiverLooper : BroadcastReceiver() {
         Log.d("SafeCircle", "AlarmReceiver triggered")
         sharedPreferenceManager = SharedPreferenceManager(context)
         print("Looper Status: ${sharedPreferenceManager.getIsUpdateLocationApiCalledLooper()} ")
-        if (sharedPreferenceManager.getIsUpdateLocationApiCalledLooper() == false) {
+        if (sharedPreferenceManager.getIsUpdateLocationApiCalledLooper() == false && MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId != null) {
             val serviceIntent = Intent(context, AlarmForegroundServiceLooper::class.java).apply {
                 putExtra("ActivityType", "N.A")
             }

@@ -172,7 +172,7 @@ class AlarmForegroundService : Service() {
         val lastLocation = sharedPreferenceManager.getLastLocation()
         val lastActivityTime = sharedPreferenceManager.getLastActivityTimestamp()
         sharedPreferenceManager.saveIsUpdateLocationApiCalled(true) // @Mark: to make sure the api is been called one at a time.
-        var shouldUpdate = false
+        var shouldUpdate: Boolean
         var shouldCallAddressApi = false
         if (lastLocation != null) {
             val distance = lastLocation.distanceTo(currentLocation)

@@ -224,6 +224,18 @@ class SharedPreferenceManager(context: Context) {
         }
     }
 
+    // --- Save selected Map Type Id---
+    fun saveMapTypeId(mapType: Int) {
+        sharedPreferences.edit {
+            putInt("selected_map_type_id", mapType)
+        }
+    }
+
+    // --- Get selected Map Type Id---
+    fun getMapTypeId(): Int {
+        return sharedPreferences.getInt("selected_map_type_id", 1)
+    }
+
     // ---- Clear all SharedPreferences data ----//
     fun clearSharedPreference() {
         /**

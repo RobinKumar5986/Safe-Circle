@@ -28,7 +28,7 @@ class MainApplication: Application() {
 
     companion object {
         private lateinit var instance: MainApplication
-
+        var imageUrl: String = ""
         fun getGoogleAuthUiClient(): GoogleAuthUiClient {
             return instance.googleAuthUiClient
         }

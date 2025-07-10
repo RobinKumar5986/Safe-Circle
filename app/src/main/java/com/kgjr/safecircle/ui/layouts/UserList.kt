@@ -1,6 +1,5 @@
 package com.kgjr.safecircle.ui.layouts
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +17,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun UserList(viewModel: GroupViewModel, onClick: (String) -> Unit) {
+fun UserList(viewModel: GroupViewModel, onClick: (String, String) -> Unit) {
     val userDataWithLocation by viewModel.groupWithLocation.collectAsState()
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
@@ -46,7 +45,7 @@ fun UserList(viewModel: GroupViewModel, onClick: (String) -> Unit) {
                 lat = lat,
                 lng = lng,
                 onClick = {
-                    onClick(data.id)
+                    onClick(data.id,imageUrl)
                 }
             )
 
