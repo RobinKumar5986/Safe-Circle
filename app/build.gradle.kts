@@ -18,8 +18,8 @@ android {
         applicationId = "com.kgjr.safecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.0.8"
+        versionCode = 9
+        versionName = "1.0.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -115,4 +115,8 @@ dependencies {
 
     //Firebase Cloud Messaging
     implementation ("com.google.firebase:firebase-messaging:24.0.1")
+
+    //In app update dependency
+    implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
 }
