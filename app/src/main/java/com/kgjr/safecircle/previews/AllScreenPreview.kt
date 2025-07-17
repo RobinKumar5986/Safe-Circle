@@ -4,6 +4,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.kgjr.safecircle.ui.layouts.AddPlaceScreen
+import com.kgjr.safecircle.ui.layouts.CustomTopBar
 import com.kgjr.safecircle.ui.layouts.InviteCodeScreen
 import com.kgjr.safecircle.ui.layouts.JoinCircleScreen
 import com.kgjr.safecircle.ui.layouts.LogoutConfirmationDialog
@@ -56,4 +57,14 @@ fun LogoutConfirmationDialogPreview() {
         onDismiss = {},
         onConfirmLogout = {}
     )
+}
+
+@Preview
+@Composable
+fun CustomTopBarPreview(){
+    CustomTopBar(
+        profileUrl = "https://picsum.photos/536/354"
+    ){
+
+    }
 }

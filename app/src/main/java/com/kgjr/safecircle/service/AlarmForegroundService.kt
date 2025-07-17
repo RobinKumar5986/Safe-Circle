@@ -52,7 +52,7 @@ class AlarmForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("SafeCircle", "Starting AlarmForegroundService...")
         activityType = intent?.getStringExtra("ActivityType") ?: "N.A"
-        val message = if (activityType != "N.A") "Checking For Updates <Test>" else "Updating Location..."
+        val message = if (activityType != "N.A") "Checking For Updates..." else "Updating Location..."
 
         startForeground(
             UPDATE_LOCATION_NOTIFICATION_ID,

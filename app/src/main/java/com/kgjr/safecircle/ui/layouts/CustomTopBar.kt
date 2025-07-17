@@ -116,12 +116,3 @@ fun CustomTopBar(
         }
     }
 }
-@Preview
-@Composable
-fun CustomTopBarPreview(){
-    CustomTopBar(
-        profileUrl = "https://picsum.photos/536/354"
-    ){
-        
-    }
-}

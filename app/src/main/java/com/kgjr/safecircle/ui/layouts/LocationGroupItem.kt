@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.kgjr.safecircle.models.ArchiveLocationData
 import com.kgjr.safecircle.models.StayPoint
 import com.kgjr.safecircle.theme.baseThemeColor
@@ -35,14 +34,12 @@ fun LocationGroupItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val formatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
-    val fullFormatter = remember { SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault()) }
 
+    val fullFormatter = remember { SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.getDefault()) }
     val backgroundColor = if (isSelected) baseThemeColor.copy(alpha = 0.18f) else Color.White
     val textColor = Color.Black
     val subTextColor = Color.Gray
 
-    // Total distance
     val totalDistanceMeters = remember(group) {
         var dist = 0f
         for (i in 0 until group.size - 1) {
@@ -71,7 +68,6 @@ fun LocationGroupItem(
         group.mapNotNull { it.battery }
     }
 
-    // Duration
     val durationText = remember(group) {
         val first = group.firstOrNull()?.timeStamp ?: 0L
         val last = group.lastOrNull()?.timeStamp ?: 0L
@@ -91,7 +87,6 @@ fun LocationGroupItem(
     val firstLocation = group.firstOrNull()
     val lastLocation = group.lastOrNull()
 
-    // Calculate stay points
     val stayPoints = remember(group) {
         val minStayDuration = 20 * 60 * 1000
         val maxDistanceMeters = 100.0
@@ -131,6 +126,30 @@ fun LocationGroupItem(
         }
     }
 
+    val enhancedStayPoints = remember(stayPoints) {
+        val list = mutableListOf<StayPoint>()
+        firstLocation?.let {
+            list.add(
+                StayPoint(
+                    location = it,
+                    startTime = it.timeStamp ?: 0L,
+                    endTime = it.timeStamp ?: 0L
+                )
+            )
+        }
+        list.addAll(stayPoints)
+        lastLocation?.let {
+            list.add(
+                StayPoint(
+                    location = it,
+                    startTime = it.timeStamp ?: 0L,
+                    endTime = it.timeStamp ?: 0L
+                )
+            )
+        }
+        list
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -144,7 +163,6 @@ fun LocationGroupItem(
         ) {
             Spacer(Modifier.height(4.dp))
 
-            // Full group time range
             val groupTimeRange = if (firstLocation?.timeStamp != null && lastLocation?.timeStamp != null) {
                 "${fullFormatter.format(Date(firstLocation.timeStamp))} - ${fullFormatter.format(Date(lastLocation.timeStamp))}"
             } else "Unknown Time Range"
@@ -157,7 +175,6 @@ fun LocationGroupItem(
 
             Spacer(Modifier.height(8.dp))
 
-            // Summary row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -169,24 +186,8 @@ fun LocationGroupItem(
 
             Spacer(Modifier.height(8.dp))
 
-            // Coordinates
-            if (firstLocation?.latitude != null && firstLocation.longitude != null &&
-                lastLocation?.latitude != null && lastLocation.longitude != null
-            ) {
-                Text(
-                    text = "Start: (${String.format("%.5f", firstLocation.latitude)}, ${String.format("%.5f", firstLocation.longitude)})",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = subTextColor
-                )
-                Text(
-                    text = "End: (${String.format("%.5f", lastLocation.latitude)}, ${String.format("%.5f", lastLocation.longitude)})",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = subTextColor,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
 
-            // Battery Sparkline
+
             if (batteryLevels.isNotEmpty()) {
                 Text(
                     text = "Battery Power Consumption",
@@ -197,38 +198,7 @@ fun LocationGroupItem(
                 BatterySparkline(group)
             }
 
-            // --- Stay Points Section ---
-            if (stayPoints.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = "Location History \uD83D\uDE0A",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    ),
-                    color = textColor,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-
-                stayPoints.forEach { stayPoint ->
-                    val address = stayPoint.location.address
-                    val title = if (address.isNullOrBlank() || address == "N.A") {
-                        "${stayPoint.location.latitude}, ${stayPoint.location.longitude}"
-                    } else {
-                        address.trim()
-                            .split(",")
-                            .take(4)
-                            .joinToString(", ")
-                    }
-
-                    val timeRange = "${formatter.format(Date(stayPoint.startTime))} - ${formatter.format(Date(stayPoint.endTime))}"
-
-                    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                        Text(text = title, style = MaterialTheme.typography.bodyMedium, color = textColor)
-                        Text(text = timeRange, style = MaterialTheme.typography.bodySmall, color = subTextColor)
-                    }
-                }
-            }
+            StayPointsStepper(enhancedStayPoints)
         }
     }
 }

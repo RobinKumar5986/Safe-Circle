@@ -3,7 +3,6 @@ package com.kgjr.safecircle.ui.layouts
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -28,7 +27,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -85,8 +83,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.maps.android.compose.MapType
+import com.kgjr.safecircle.LauncherActivity
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
 import com.kgjr.safecircle.models.SettingButtonType
@@ -98,9 +98,6 @@ import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.core.net.toUri
-import com.kgjr.safecircle.LauncherActivity
-import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
