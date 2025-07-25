@@ -207,6 +207,7 @@ class AlarmForegroundService : Service() {
             val lastTimeApiCalled = sharedPreferenceManager.getLastTimeForAddressApi()
             val lastApiLatLng = sharedPreferenceManager.getLastLocationLatLngApi()
             val lastAddressFromApi = sharedPreferenceManager.getActualAddressForApi()
+            sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
 
             if (lastAddressFromApi == null || lastTimeApiCalled == 0L || lastApiLatLng == null) {
                 shouldCallAddressApi = true
@@ -279,7 +280,7 @@ class AlarmForegroundService : Service() {
                         ){
 //                            onCompletion()
                         }
-                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
+
                     } else {
                         BackgroundApiManagerUtil.archiveLocationDataV2(
                             userId = userId!!,
@@ -302,7 +303,6 @@ class AlarmForegroundService : Service() {
                         ){
                             onCompletion()
                         }
-                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
                     }
                 }
             } else {
@@ -327,7 +327,6 @@ class AlarmForegroundService : Service() {
                 ){
                     onCompletion()
                 }
-                sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
             }
         }
         else{

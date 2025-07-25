@@ -1,5 +1,6 @@
 package com.kgjr.safecircle
 
+
 import android.Manifest
 import android.content.Intent
 import android.os.Bundle

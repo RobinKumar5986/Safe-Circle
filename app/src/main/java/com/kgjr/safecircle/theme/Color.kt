@@ -63,6 +63,9 @@ val blackPurple = Color(0xFF1D0141)
 val titleBackground = Color(0xF0F5F5F5)
 val lightRed = Color(0xFFFFE6E6)
 val buttonLightGray = Color(0xFFF0F0F0)
+val contactButtonBackground = Color(0xFFBBDEFB)
+val contactButtonTextColor = Color(0xFF0D47A1)
+
 
 
 

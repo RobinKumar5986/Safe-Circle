@@ -92,7 +92,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
         val batterPercentage = getBatteryPercentage(context)
         val lastLocation = sharedPreferenceManager.getLastLocation()
         val lastActivityTime = sharedPreferenceManager.getLastActivityTimestamp()
-        var shouldUpdate = false
+        var shouldUpdate: Boolean
         var shouldCallAddressApi = false
         if (lastLocation != null) {
             val distance = lastLocation.distanceTo(currentLocation)
@@ -117,7 +117,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
 //        if (sharedPreferenceManager.getLastActivityStatus() == "IN_VEHICLE" && activityType == "IN_VEHICLE" && (currentTime - lastRecordedTime) < 10_000) {
 //            shouldUpdate = false
 //        }
-        if ((currentTime - lastRecordedTime) < 10_000) {
+        if ((currentTime - lastRecordedTime) < 10_000) { //minimum gap b.w two updates is 10 seconds
             shouldUpdate = false
         }
         if (shouldUpdate) {
@@ -131,7 +131,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
             val lastTimeApiCalled = sharedPreferenceManager.getLastTimeForAddressApi()
             val lastApiLatLng = sharedPreferenceManager.getLastLocationLatLngApi()
             val lastAddressFromApi = sharedPreferenceManager.getActualAddressForApi()
-
+            sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
             if (lastAddressFromApi == null || lastTimeApiCalled == 0L || lastApiLatLng == null) {
                 shouldCallAddressApi = true
             } else {
@@ -204,7 +204,7 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
                         ){
 //                            onCompletion()
                         }
-                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
+
                     } else {
                         BackgroundApiManagerUtil.archiveLocationDataV2(
                             userId = userId!!,
@@ -227,7 +227,6 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
                         ){
                             onCompletion()
                         }
-                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
                     }
                 }
             } else {
@@ -252,7 +251,6 @@ class ActivityTransitionReceiver : BroadcastReceiver() {
                 ){
                     onCompletion()
                 }
-                sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
             }
         }
         else{

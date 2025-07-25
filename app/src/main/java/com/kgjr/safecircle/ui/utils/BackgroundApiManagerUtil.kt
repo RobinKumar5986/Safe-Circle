@@ -168,7 +168,9 @@ object BackgroundApiManagerUtil {
             val day = calendar.get(Calendar.DAY_OF_MONTH)
 
             val locRef =
-                FirebaseDatabase.getInstance().getReference("Location").child("LocationArchive")
+                FirebaseDatabase.getInstance()
+                    .getReference("Location")
+                    .child("LocationArchive")
                     .child(userId)
                     .child(year.toString())
                     .child(month.toString())
@@ -200,14 +202,21 @@ object BackgroundApiManagerUtil {
 
             val timeoutRunnable = Runnable {
                 if (!completed) {
-                    Log.e("FirebaseV2", "Firebase operation timed out after 30 seconds.")
+                    notificationService.cancelUpdateLocationNotification()
+                    notificationService.cancelWorkerNotification()
+                    Log.e("FirebaseV2", "Firebase operation timed out after 15 seconds.")
+                    if (activityType != null) {
+                        sharedPreferenceManager.saveLastActivityStatus(activityType)
+                    }
+                    sharedPreferenceManager.saveLastLocation(lat = lat, lng = lng)
+                    archiveLocationLocal( dataToAppendInTheList as Map<String, Any>,sharedPreferenceManager)
                     onCompletion()
                     completed = true
                 }
             }
 
-            // Post the timeout runnable with a delay of 30 seconds
-            handler.postDelayed(timeoutRunnable, 30000)
+            // Post the timeout runnable with a delay of 15 seconds
+            handler.postDelayed(timeoutRunnable, 15000)
 
             locRef.push().setValue(dataToAppendInTheList)
                 .addOnSuccessListener {
@@ -226,8 +235,15 @@ object BackgroundApiManagerUtil {
                 }
                 .addOnFailureListener { exception ->
                     if (!completed) {
+                        notificationService.cancelUpdateLocationNotification()
+                        notificationService.cancelWorkerNotification()
                         Log.e("FirebaseV2", "Failed to archive location data: ${exception.message}")
+                        if (activityType != null) {
+                            sharedPreferenceManager.saveLastActivityStatus(activityType)
+                        }
+                        sharedPreferenceManager.saveLastLocation(lat = lat, lng = lng)
                         onCompletion()
+                        archiveLocationLocal( dataToAppendInTheList as Map<String, Any>,sharedPreferenceManager)
                         completed = true
                         handler.removeCallbacks(timeoutRunnable)
                     }
@@ -285,8 +301,8 @@ object BackgroundApiManagerUtil {
                 }
             }
 
-            // Post the timeout runnable with a delay of 30 seconds
-            handler.postDelayed(timeoutRunnable, 30000) // 30000 milliseconds = 30 seconds
+            // Post the timeout runnable with a delay of 15 seconds
+            handler.postDelayed(timeoutRunnable, 15000) // 30000 milliseconds = 30 seconds
 
             locRef.setValue(dataToSet)
                 .addOnSuccessListener {
@@ -431,6 +447,69 @@ object BackgroundApiManagerUtil {
                 e.printStackTrace()
                 onSuccess(null)
             }
+        }
+    }
+
+    fun archiveLocationLocal(data: Map<String, Any>,sharedPreferenceManager: SharedPreferenceManager,) {
+        Log.d("FirebaseV2", "data: $data")
+        sharedPreferenceManager.archiveLocationLocal(data)
+    }
+
+    fun uploadAllPendingData() {
+        val userId = MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId ?: return
+        val sharedPref = MainApplication.getSharedPreferenceManager()
+        val allData = sharedPref.getArchivedLocations().toMutableList()
+
+        if (allData.isEmpty()) {
+            Log.d("FirebaseV2", "No pending location data to upload.")
+            return
+        }
+
+        // Make a copy of the original list to iterate over safely
+        val dataToUpload = allData.toList()
+
+        for (data in dataToUpload) {
+            val lat = data["latitude"]
+            val lng = data["longitude"]
+            val timeStamp = (data["timeStamp"] as? Number)?.toLong() ?: continue
+            val activity = data["activity"]
+            val battery = data["battery"]
+            val address = data["address"]
+
+            val calendar = Calendar.getInstance().apply { timeInMillis = timeStamp }
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH) + 1
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val locRef = FirebaseDatabase.getInstance()
+                .getReference("Location")
+                .child("LocationArchive")
+                .child(userId)
+                .child(year.toString())
+                .child(month.toString())
+                .child(day.toString())
+
+            val uploadData = mapOf(
+                "latitude" to lat,
+                "longitude" to lng,
+                "timeStamp" to timeStamp,
+                "activity" to activity,
+                "battery" to battery,
+                "address" to address
+            )
+
+            locRef.push().setValue(uploadData)
+                .addOnSuccessListener {
+                    Log.d("FirebaseV2", "Uploaded pending data: $uploadData")
+                    allData.remove(data)
+                    sharedPref.updateArchivedLocations(allData)
+                    if (allData.isEmpty()) {
+                        sharedPref.clearArchivedLocations()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("FirebaseV2", "Failed to upload pending data: ${e.message}")
+                }
         }
     }
 }

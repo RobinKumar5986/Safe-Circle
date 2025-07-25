@@ -123,7 +123,7 @@ fun AllPermissionScreen(
         PermissionItemData(
             icon = Icons.Default.LocationOn,
             title = "Location Permission",
-            description = "Required to access your location even in background",
+            description = "Required to access the location so, that you and your love once can be safe.",
             isGranted = isForegroundLocationGranted &&
                     (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || isBackgroundLocationGranted),
             onClick = {
@@ -145,7 +145,7 @@ fun AllPermissionScreen(
         PermissionItemData(
             icon = Icons.Default.Notifications,
             title = "Notification Permission",
-            description = "Required to send local notifications",
+            description = "Required notification permission so, that we can let you know about your circle.",
             isGranted = notificationPermissionGranted,
             onClick = {
                 if (NotificationUtils.isNotificationPermissionRequired()) {
@@ -156,7 +156,7 @@ fun AllPermissionScreen(
         PermissionItemData(
             painter = R.drawable.walk,
             title = "Physical Activity Permission",
-            description = "Required to detect physical activity like walking or running",
+            description = "This permission allows us to track your physical activity and provide better insights into your and your group’s overall health and safety.",
             isGranted = activityPermissionGranted,
             onClick = {
                 if (PhysicalActivityUtils.isActivityPermissionRequired()) {
@@ -167,7 +167,7 @@ fun AllPermissionScreen(
         PermissionItemData(
             painter = R.drawable.outline_battery_status_good_24,
             title = "Battery Optimization",
-            description = "Required to run the app without background restrictions",
+            description = "Required to run the app smoothly without any issue. So, that in case of emergency we can help.",
             isGranted = isBatteryOptimizationIgnored,
             onClick = {
                 requestIgnoreBatteryOptimizations(context)

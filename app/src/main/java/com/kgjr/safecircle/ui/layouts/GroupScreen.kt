@@ -93,6 +93,7 @@ import com.kgjr.safecircle.models.SettingButtonType
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
 import com.kgjr.safecircle.ui.utils.AndroidAlarmSchedulerLooper
+import com.kgjr.safecircle.ui.utils.BackgroundApiManagerUtil
 import com.kgjr.safecircle.ui.utils.LocationActivityManager
 import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
@@ -140,6 +141,7 @@ fun GroupScreen(
     var isSettingsSheetVisible by remember { mutableStateOf(false) }
     val showLogoutDialog = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    var showHelpAndFeedbackDialog by remember { mutableStateOf(false) }
 
     val alpha by animateFloatAsState(
         targetValue = targetAlpha,
@@ -150,11 +152,14 @@ fun GroupScreen(
         selectedMapType = LocationUtils.getMapTypeFromId(mapTypeId)
     }
     LaunchedEffect(Unit) {
-        if (MainApplication.getSharedPreferenceManager().getIsPlaceCheckInCalled() == false){
+        if (!MainApplication.getSharedPreferenceManager().getIsPlaceCheckInCalled()){
             adminId?.let {
                 viewModel.getAllPlaceCheckins(userId = it,context = context)
             }
         }
+    }
+    LaunchedEffect(Unit) {
+        BackgroundApiManagerUtil.uploadAllPendingData()
     }
     LaunchedEffect(error) {
         if(error != null){
@@ -735,7 +740,9 @@ fun GroupScreen(
             }
         )
     }
-
+    if(showHelpAndFeedbackDialog){
+        HelpAndSupportDialog(onDismiss = { showHelpAndFeedbackDialog = false })
+    }
 
     //@Mark: Setting bottom sheet
     if (isSettingsSheetVisible) {
@@ -763,6 +770,9 @@ fun GroupScreen(
                                 "Share Safe Circle"
                             )
                         )
+                    }
+                    SettingButtonType.HELP_AND_FEEDBACK -> {
+                        showHelpAndFeedbackDialog = true
                     }
                     SettingButtonType.PRIVACY_SECURITY -> {
                         val privacyPolicyUrl = "https://sites.google.com/view/kjjrsafecircle/home"

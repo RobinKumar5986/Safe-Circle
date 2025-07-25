@@ -106,6 +106,7 @@ class AlarmForegroundServiceLooper: Service() {
                 if (location != null && location.accuracy <= 10.0f && System.currentTimeMillis() - location.time < TimeUnit.MINUTES.toMillis(1) && !sharedPreferenceManager.getIsUpdateLocationApiCalledLooper()) {
                     updateLocation(context = applicationContext, activityType = activityType, currentLocation = location) {
                         Log.d("SafeCircle", "Service stopped after location update")
+                        Log.d("LooperLocationSafeCircle", location.latitude.toString() + " " + location.longitude.toString())
                         sharedPreferenceManager.saveIsUpdateLocationApiCalledLooper(false)
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopForeground(STOP_FOREGROUND_DETACH)
@@ -150,7 +151,7 @@ class AlarmForegroundServiceLooper: Service() {
         super.onDestroy()
         stopLocationUpdates()
         Log.d("SafeCircle", "Service destroyed")
-        scheduler.scheduleAlarm(timeInSec = 300)
+        scheduler.scheduleAlarm(timeInSec = 10)
     }
 
 
@@ -200,6 +201,7 @@ class AlarmForegroundServiceLooper: Service() {
             val lastTimeApiCalled = sharedPreferenceManager.getLastTimeForAddressApi()
             val lastApiLatLng = sharedPreferenceManager.getLastLocationLatLngApi()
             val lastAddressFromApi = sharedPreferenceManager.getActualAddressForApi()
+            sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
 
             if (lastAddressFromApi == null || lastTimeApiCalled == 0L || lastApiLatLng == null) {
                 shouldCallAddressApi = true
@@ -272,7 +274,6 @@ class AlarmForegroundServiceLooper: Service() {
                         ){
 //                            onCompletion()
                         }
-                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
                     } else {
                         BackgroundApiManagerUtil.archiveLocationDataV2(
                             userId = userId!!,
@@ -295,7 +296,6 @@ class AlarmForegroundServiceLooper: Service() {
                         ){
                             onCompletion()
                         }
-                        sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
                     }
                 }
             } else {
@@ -320,7 +320,6 @@ class AlarmForegroundServiceLooper: Service() {
                 ){
                     onCompletion()
                 }
-                sharedPreferenceManager.saveLastActivityTimestamp(System.currentTimeMillis())
             }
         }
         else{

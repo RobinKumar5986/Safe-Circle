@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -47,18 +46,16 @@ object LocationActivityManager {
     }
 
     private fun createNotificationChannel(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                UPDATE_LOCATION_CHANNEL_ID,
-                "Location Updates",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Used for background location update notifications"
-            }
-
-            val manager = context.getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            UPDATE_LOCATION_CHANNEL_ID,
+            "Location Updates",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Used for background location update notifications"
         }
+
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(channel)
     }
 
     private fun schedulePeriodicNotificationWorker(context: Context) {

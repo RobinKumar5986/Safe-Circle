@@ -11,6 +11,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.MutableData
 import com.google.firebase.database.Transaction
 import com.google.firebase.database.ValueEventListener
+import com.google.gson.Gson
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.models.ArchiveLocationData
 import com.kgjr.safecircle.models.Group
@@ -394,9 +395,9 @@ class GroupViewModel @Inject constructor() : ViewModel() {
 
                     dayList.add(data)
                 }
-
-                if (dayList.isNotEmpty()) {
-                    allDaysData.add(Pair(formattedDate, dayList))
+                val sortedDayList = dayList.sortedBy { it.timeStamp } //sort the data by time...
+                if (sortedDayList.isNotEmpty()) {
+                    allDaysData.add(Pair(formattedDate, sortedDayList))
                 }
 
                 pendingCalls--

@@ -61,6 +61,7 @@ fun LocationMap(
         val mapTypeId = sharedPreferenceManager.getMapTypeId()
         selectedMapType = LocationUtils.getMapTypeFromId(mapTypeId)
     }
+
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier
@@ -167,7 +168,10 @@ fun LocationMap(
                         BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
                     }
 
-                    val markerState = remember { MarkerState(position = position) }
+                    // Use selectedGroupIndex and index as keys to recreate MarkerState when group changes
+                    val markerState = remember(selectedGroupIndex, index) {
+                        MarkerState(position = position)
+                    }
 
                     Marker(
                         state = markerState,
@@ -198,7 +202,10 @@ fun LocationMap(
                 selectedPath.lastOrNull()?.let { lastLoc ->
                     if (lastLoc.latitude != null && lastLoc.longitude != null && lastLoc.timeStamp != null) {
                         val position = LatLng(lastLoc.latitude, lastLoc.longitude)
-                        val customMarkerState = remember { MarkerState(position = position) }
+                        // Use selectedGroupIndex as key to recreate MarkerState
+                        val customMarkerState = remember(selectedGroupIndex) {
+                            MarkerState(position = position)
+                        }
 
                         val address = lastLoc.address
                         val title = if (address.isNullOrBlank() || address == "N.A") {
@@ -219,7 +226,7 @@ fun LocationMap(
                                 lastLoc.latitude.toString(),
                                 lastLoc.longitude.toString(),
                                 profileImageUrl,
-                                showMarkerImage,
+                                showMarkerImage.toString(),
                                 lastLoc.timeStamp.toString(),
                                 lastLoc.battery?.toString() ?: ""
                             ),

@@ -3,9 +3,15 @@ package com.kgjr.safecircle.broadcastReceiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.location.Location
 import android.util.Log
+import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.ui.utils.AndroidAlarmSchedulerLooper
+import com.kgjr.safecircle.ui.utils.BackgroundApiManagerUtil
+import com.kgjr.safecircle.ui.utils.NotificationService
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
+import com.kgjr.safecircle.ui.utils.getBatteryPercentage
+import java.util.Calendar
 
 class AlarmBootReceiverForLooper : BroadcastReceiver() {
     companion object {

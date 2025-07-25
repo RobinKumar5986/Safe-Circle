@@ -2,6 +2,7 @@ package com.kgjr.safecircle.ui.utils
 
 import android.content.Context
 import android.location.Location
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kgjr.safecircle.models.*
@@ -235,6 +236,40 @@ class SharedPreferenceManager(context: Context) {
     fun getMapTypeId(): Int {
         return sharedPreferences.getInt("selected_map_type_id", 1)
     }
+
+
+    // --- Save/Append location data to the local list ---
+    fun archiveLocationLocal(data: Map<String, Any>) {
+        val currentList = getArchivedLocations().toMutableList()
+        currentList.add(data)
+        val json = gson.toJson(currentList)
+        sharedPreferences.edit { putString("archived_locations_local", json) }
+        Log.d("FirebaseV2", "Archived: $data")
+    }
+
+    // --- Retrieve the list ---
+    fun getArchivedLocations(): List<Map<String, Any>> {
+        val json = sharedPreferences.getString("archived_locations_local", null) ?: return emptyList()
+        val type = object : TypeToken<List<Map<String, Any>>>() {}.type
+        return try {
+            gson.fromJson(json, type)
+        } catch (e: Exception) {
+            Log.e("SharedPreferences", "Failed to parse archived data", e)
+            emptyList()
+        }
+    }
+    // ---Update the archived locations ----
+    fun updateArchivedLocations(list: List<Map<String, Any>>) {
+        val json = Gson().toJson(list)
+        sharedPreferences.edit { putString("archived_locations_local", json) }
+    }
+
+    //---- Cleat all the location archived----
+    fun clearArchivedLocations() {
+        sharedPreferences.edit { remove("archived_locations_local") }
+    }
+
+
 
     // ---- Clear all SharedPreferences data ----//
     fun clearSharedPreference() {

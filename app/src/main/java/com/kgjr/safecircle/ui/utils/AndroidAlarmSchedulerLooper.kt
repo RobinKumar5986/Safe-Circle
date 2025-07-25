@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import com.kgjr.safecircle.broadcastReceiver.AlarmReceiver
 import com.kgjr.safecircle.broadcastReceiver.AlarmReceiverLooper
 
 class AndroidAlarmSchedulerLooper(
@@ -43,7 +42,7 @@ class AndroidAlarmSchedulerLooper(
 
     fun cancelAlarm() {
         Log.d("SafeCircle", "Canceling alarm")
-        val intent = Intent(context, AlarmReceiver::class.java)
+        val intent = Intent(context, AlarmReceiverLooper::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             0,
