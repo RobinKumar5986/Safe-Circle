@@ -12,6 +12,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.location.ActivityRecognition
+import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.broadcastReceiver.ActivityTransitionReceiver
 import com.kgjr.safecircle.ui.utils.NotificationService.Companion.UPDATE_LOCATION_CHANNEL_ID
 import com.kgjr.safecircle.worker.PeriodicLocationUpdater
@@ -59,6 +60,7 @@ object LocationActivityManager {
     }
 
     private fun schedulePeriodicNotificationWorker(context: Context) {
+        Log.d("WorkManager", "PeriodicNotificationWorker has been schedule")
         val periodicWorkRequest = PeriodicWorkRequestBuilder<PeriodicLocationUpdater>(
             15, TimeUnit.MINUTES
         ).addTag("PeriodicNotificationWorkerTag").build()
@@ -68,6 +70,7 @@ object LocationActivityManager {
             ExistingPeriodicWorkPolicy.KEEP,
             periodicWorkRequest
         )
+
     }
     fun cancelPeriodicNotificationWorker(context: Context) {
         Log.d("WorkManager", "PeriodicNotificationWorker has been cancelled.")

@@ -27,14 +27,16 @@ class PeriodicLocationUpdater(context: Context, workerParams: WorkerParameters) 
         private lateinit var sharedPreferenceManager: SharedPreferenceManager
     }
     private lateinit var notificationService: NotificationService
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.POST_NOTIFICATIONS])
     override suspend fun doWork(): Result {
         return try {
-            BackgroundApiManagerUtil.uploadAllPendingData()
+            Log.d("PeriodicWorker", "doWork() started. Performing location and battery update.")
+            val scheduler = MainApplication.getScheduler()
             notificationService = NotificationService(applicationContext)
             sharedPreferenceManager = SharedPreferenceManager(applicationContext)
-            if (!sharedPreferenceManager.getIsUpdateLocationApiCalled() && MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId != null) {
-                Log.d("PeriodicWorker", "doWork() started. Performing location and battery update.")
+
+            if (MainApplication.getGoogleAuthUiClient().getSignedInUser()?.userId != null) {
+
 //                val serviceIntent =
 //                    Intent(applicationContext, AlarmForegroundService::class.java).apply {
 //                        putExtra("ActivityType", "N.A")
@@ -48,6 +50,9 @@ class PeriodicLocationUpdater(context: Context, workerParams: WorkerParameters) 
                             currentLocation = location,
                             onCompletion = {
 
+                                //scheduling the alarm manager
+                                scheduler.cancelAlarm()
+                                scheduler.scheduleAlarm(1)
                             }
                         )
                     }
@@ -99,7 +104,7 @@ class PeriodicLocationUpdater(context: Context, workerParams: WorkerParameters) 
             shouldUpdate = false
         }
         if (shouldUpdate) {
-            val notification = notificationService.getUpdateLocationNotification("Updates Location...")
+            val notification = notificationService.getUpdateLocationNotification("Checking for your wellbeing...")
             notificationService.notificationManager.notify(
                 NotificationService.UPDATE_LOCATION_NOTIFICATION_ID,
                 notification

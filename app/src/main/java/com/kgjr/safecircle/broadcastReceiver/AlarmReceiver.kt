@@ -24,7 +24,7 @@ class AlarmReceiver : BroadcastReceiver() {
     private lateinit var notificationService: NotificationService
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.POST_NOTIFICATIONS])
     override fun onReceive(context: Context, intent: Intent) {
-        scheduler = AndroidAlarmSchedulerLooper(context)
+        scheduler = MainApplication.getScheduler()
         notificationService = NotificationService(context)
         sharedPreferenceManager = SharedPreferenceManager(context)
         print("Looper Status In Alarm Receiver: ${sharedPreferenceManager.getIsUpdateLocationApiCalledLooper()}")

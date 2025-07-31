@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.content.IntentFilter
 import com.google.android.gms.auth.api.identity.Identity
+import com.kgjr.safecircle.ui.utils.AndroidAlarmSchedulerLooper
 import com.kgjr.safecircle.ui.utils.Auth.google_sign_in.GoogleAuthUiClient
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 import dagger.hilt.android.HiltAndroidApp
@@ -25,6 +26,9 @@ class MainApplication: Application() {
     val sharedPreferenceManager by lazy {
         SharedPreferenceManager(applicationContext)
     }
+    val scheduler by  lazy {
+        AndroidAlarmSchedulerLooper(applicationContext)
+    }
 
     companion object {
         private lateinit var instance: MainApplication
@@ -35,6 +39,10 @@ class MainApplication: Application() {
 
         fun getSharedPreferenceManager(): SharedPreferenceManager {
             return instance.sharedPreferenceManager
+        }
+
+        fun getScheduler(): AndroidAlarmSchedulerLooper {
+            return instance.scheduler
         }
     }
 

@@ -3,7 +3,6 @@ package com.kgjr.safecircle.ui.layouts
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -93,7 +92,6 @@ import com.kgjr.safecircle.R
 import com.kgjr.safecircle.models.SettingButtonType
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
-import com.kgjr.safecircle.ui.utils.AndroidAlarmSchedulerLooper
 import com.kgjr.safecircle.ui.utils.BackgroundApiManagerUtil
 import com.kgjr.safecircle.ui.utils.LocationActivityManager
 import com.kgjr.safecircle.ui.utils.LocationUtils
@@ -133,7 +131,6 @@ fun GroupScreen(
     val groupList by viewModel.groupList.collectAsState()
     val currentSelectedGroup by viewModel.group.collectAsState()
     val currentGroupId by viewModel.currentGroupId.collectAsState()
-    val scheduler = remember { AndroidAlarmSchedulerLooper(context) }
     val checkingInListScrollState = rememberScrollState()
     val sharedPreferenceManager = MainApplication.getSharedPreferenceManager()
 
@@ -175,13 +172,6 @@ fun GroupScreen(
          */
         LocationActivityManager.cancelPeriodicNotificationWorker(context)
         LocationActivityManager.initializeNotificationAndWorker(context)
-        delay(5000) //delay so all not start at the same time just in case...
-        if(MainApplication.getSharedPreferenceManager().getIsLooperEnabled() == false) {
-            scheduler.cancelAlarm()
-            scheduler.scheduleAlarm(1)
-            MainApplication.getSharedPreferenceManager().saveLooperEnabled(true)
-        }
-//         initiate for the current location in just 1 sec
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val permission = Manifest.permission.ACTIVITY_RECOGNITION
             if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {

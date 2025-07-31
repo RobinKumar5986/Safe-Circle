@@ -7,16 +7,13 @@ import android.content.Intent
 import android.location.Location
 import android.util.Log
 import androidx.annotation.RequiresPermission
-import androidx.core.content.ContextCompat
 import com.kgjr.safecircle.MainApplication
-import com.kgjr.safecircle.service.AlarmForegroundServiceLooper
 import com.kgjr.safecircle.ui.utils.AndroidAlarmSchedulerLooper
 import com.kgjr.safecircle.ui.utils.BackgroundApiManagerUtil
 import com.kgjr.safecircle.ui.utils.LocationUtils
 import com.kgjr.safecircle.ui.utils.NotificationService
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
 import com.kgjr.safecircle.ui.utils.getBatteryPercentage
-import com.kgjr.safecircle.worker.PeriodicLocationUpdater
 import java.util.Calendar
 
 class AlarmReceiverLooper : BroadcastReceiver() {
@@ -28,7 +25,12 @@ class AlarmReceiverLooper : BroadcastReceiver() {
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.POST_NOTIFICATIONS])
     override fun onReceive(context: Context, intent: Intent) {
         Log.d("SafeCircle", "AlarmReceiver triggered")
-        scheduler = AndroidAlarmSchedulerLooper(context)
+        try {
+            BackgroundApiManagerUtil.uploadAllPendingData()
+        }catch (e: Exception){
+            e.printStackTrace()
+        }
+        scheduler = MainApplication.getScheduler()
         sharedPreferenceManager = SharedPreferenceManager(context)
         notificationService = NotificationService(context)
         print("Looper Status: ${sharedPreferenceManager.getIsUpdateLocationApiCalledLooper()} ")

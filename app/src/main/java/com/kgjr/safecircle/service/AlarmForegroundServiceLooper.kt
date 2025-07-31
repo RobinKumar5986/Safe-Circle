@@ -42,7 +42,7 @@ class AlarmForegroundServiceLooper: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        scheduler = AndroidAlarmSchedulerLooper(applicationContext)
+        scheduler = MainApplication.getScheduler()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
         notificationService = NotificationService(applicationContext)
         sharedPreferenceManager = SharedPreferenceManager(applicationContext)
