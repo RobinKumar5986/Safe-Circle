@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
         if(updateType == AppUpdateType.FLEXIBLE){
             appUpdateManager.registerListener(installStateUpdatedListener)
         }
+        MainApplication.getSharedPreferenceManager().saveLooperEnabled(false)
         checkForAppUpdate()
         setContent {
             SafeCircleTheme {

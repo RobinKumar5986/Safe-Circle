@@ -69,4 +69,9 @@ object LocationActivityManager {
             periodicWorkRequest
         )
     }
+    fun cancelPeriodicNotificationWorker(context: Context) {
+        Log.d("WorkManager", "PeriodicNotificationWorker has been cancelled.")
+        WorkManager.getInstance(context)
+            .cancelUniqueWork("PeriodicNotificationWorkerTag")
+    }
 }

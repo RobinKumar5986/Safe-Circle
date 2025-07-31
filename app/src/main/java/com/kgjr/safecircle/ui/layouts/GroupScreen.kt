@@ -3,6 +3,7 @@ package com.kgjr.safecircle.ui.layouts
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -167,14 +168,16 @@ fun GroupScreen(
             viewModel.clearError()
         }
     }
+
     LaunchedEffect(Unit) {
         /**
          * @Mark: always initialize the below method because it also creates the notification channel.
          */
+        LocationActivityManager.cancelPeriodicNotificationWorker(context)
         LocationActivityManager.initializeNotificationAndWorker(context)
-
         delay(5000) //delay so all not start at the same time just in case...
         if(MainApplication.getSharedPreferenceManager().getIsLooperEnabled() == false) {
+            scheduler.cancelAlarm()
             scheduler.scheduleAlarm(1)
             MainApplication.getSharedPreferenceManager().saveLooperEnabled(true)
         }
