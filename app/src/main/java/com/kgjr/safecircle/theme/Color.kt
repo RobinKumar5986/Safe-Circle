@@ -7,27 +7,27 @@ val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)
 
 val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF635480)
+val PurpleGrey40 = Color(0xFF4B6D75)
 val Pink40 = Color(0xFF7D5260)
 
 
 //Theme Colors
-val baseThemeColor = Color(0xFFB57BFF)
+val baseThemeColor = Color(0xFF5BDDD0)
 
 // Primary Variant - Slightly deeper shade
-val primaryVariant = Color(0xFF9C52FF)
+val  primaryVariant = Color(0xFF7EF2E3)
 
 // Secondary - Complementary soft purple-pink
-val secondaryColor = Color(0xFFFF7BF2)
+val secondaryColor = Color(0xFF7EF2E3)
 
 // Secondary Variant - More muted complementary
-val secondaryVariant = Color(0xFFD65ED9)
+val secondaryVariant = Color(0xFFA8F8ED)
 
 // Background - Light background for screens
-val backgroundColor = Color(0xFFF8F5FF)
+val backgroundColor = Color(0xFFE5FCFD)
 
 // Surface - Card, sheet background
-val surfaceColor = Color(0xFFFFFFFF)
+val surfaceColor = Color(0xFFF2FEFF)
 
 // Button - Elevated button color
 val googleButtonCole = Color(0xFFFFCC80)

@@ -8,8 +8,10 @@ import android.content.Intent
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.kgjr.safecircle.LauncherActivity
 import com.kgjr.safecircle.R
+import com.kgjr.safecircle.theme.baseThemeColor
 
 class NotificationService(private val context: Context) {
 
@@ -34,10 +36,11 @@ class NotificationService(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         return NotificationCompat.Builder(context, UPDATE_LOCATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.main_app_logo_empty_background)
+            .setSmallIcon(R.drawable.app_new_logo)
             .setContentTitle(message)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setColor(ContextCompat.getColor(context, R.color.notification_color))
             .setOngoing(true)
             .setAutoCancel(true)
             .build()
@@ -56,11 +59,12 @@ class NotificationService(private val context: Context) {
         )
 
         val notification = NotificationCompat.Builder(context, UPDATE_LOCATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.main_app_logo_empty_background)
+            .setSmallIcon(R.drawable.app_new_logo)
             .setContentTitle(message)
             .setContentText(bodyText)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setColor(ContextCompat.getColor(context, R.color.notification_color))
             .setOngoing(true)
             .setAutoCancel(true)
             .build()

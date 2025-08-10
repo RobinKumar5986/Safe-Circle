@@ -113,7 +113,7 @@ fun JoinCircleScreen(onBackPress: () -> Unit,
 
                 Text(
                     modifier = Modifier.padding(top = 10.dp),
-                    text = "Get the code from the person\nsetting up your family's Circle",
+                    text = "Get the code from the person\nsetting up your family's group",
                     fontSize = 20.sp,
                     color = PurpleGrey40.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,

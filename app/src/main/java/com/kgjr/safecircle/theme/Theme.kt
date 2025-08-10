@@ -1,9 +1,6 @@
 package com.kgjr.safecircle.theme
 import android.app.Activity
 import android.os.Build
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -14,11 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
 // === Global Color Definitions ===
-val BaseColor = Color(0xFFB57BFF)
+val BaseColor = Color(0xFF5BDDD0)
 
 val SafeCirclePrimary = BaseColor
 val SafeCircleSecondary = BaseColor.copy(alpha = 0.85f)

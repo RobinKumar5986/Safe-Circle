@@ -34,7 +34,7 @@ fun SettingsSheetContent(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "Universal settings",
+                text = "Settings",
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.Gray
             )

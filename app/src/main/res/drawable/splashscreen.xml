@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <color android:color="#FF9C52FF"/>
+        <color android:color="@color/app_new_logo_background"/>
     </item>
     <item
         android:width="200dp"
         android:height="200dp"
-        android:drawable="@drawable/main_app_logo_empty_background"
+        android:drawable="@drawable/app_new_logo"
         android:gravity="center" />
 </layer-list>

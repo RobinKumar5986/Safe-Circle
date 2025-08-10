@@ -36,6 +36,7 @@ import coil.size.Size
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
@@ -60,6 +61,20 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
 
     val coroutineScope = rememberCoroutineScope()
 
+    val context = LocalContext.current
+    val mapStyleOptions = remember {
+        if (selectedMapType == MapType.NORMAL) {
+            try {
+                val jsonString = context.resources.openRawResource(R.raw.uber_style_map1)
+                    .bufferedReader().use { it.readText() }
+                MapStyleOptions(jsonString)
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
     LaunchedEffect(groupWithLocation) {
         if (groupWithLocation.isNotEmpty()) {
             val boundsBuilder = LatLngBounds.Builder()
@@ -105,7 +120,10 @@ fun HomeScreenMapView(selectedMapType: MapType, viewModel: GroupViewModel) {
                 .fillMaxWidth()
                 .fillMaxHeight(fraction = 0.67f),
             uiSettings = MapUiSettings(zoomControlsEnabled = false),
-            properties = MapProperties(mapType = selectedMapType),
+            properties = MapProperties(
+                mapType = selectedMapType,
+                mapStyleOptions = mapStyleOptions
+                ),
             cameraPositionState = cameraPositionState
         ) {
             groupWithLocation.forEach { groupData ->

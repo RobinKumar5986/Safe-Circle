@@ -448,7 +448,8 @@ fun GroupScreen(
                                 painter = painterResource(id = R.drawable.layer),
                                 contentDescription = "Create Group",
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(24.dp),
+                                colorFilter = ColorFilter.tint(baseThemeColor)
 
                             )
                         }
@@ -676,8 +677,8 @@ fun GroupScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         val options = listOf(
-                            Triple(R.drawable.street, "Auto", MapType.NORMAL),
-                            Triple(R.drawable.street, "Street", MapType.TERRAIN),
+                            Triple(R.drawable.street, "Road", MapType.TERRAIN),
+                            Triple(R.drawable.street, "Street", MapType.NORMAL),
                             Triple(R.drawable.satellite, "Satellite", MapType.HYBRID)
                         )
 

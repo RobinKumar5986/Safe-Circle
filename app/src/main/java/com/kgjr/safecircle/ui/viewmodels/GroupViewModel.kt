@@ -122,6 +122,7 @@ class GroupViewModel @Inject constructor() : ViewModel() {
                 }
                 _isLoading.value = false
             }.addOnFailureListener { exception ->
+                setError(exception.message.toString())
                 Log.e("GroupViewModel", "Error loading user data for $userId", exception)
                 _isLoading.value = false
             }
@@ -157,6 +158,7 @@ class GroupViewModel @Inject constructor() : ViewModel() {
                 _isLoading.value = false
                 onSuccess()
             }.addOnFailureListener { exception ->
+                setError(exception.message.toString())
                 Log.e("GroupViewModel", "Error loading group data for $groupId", exception)
                 _group.value = null
                 _isLoading.value = false
@@ -211,6 +213,7 @@ class GroupViewModel @Inject constructor() : ViewModel() {
                                 )
                             }
                             .addOnFailureListener { exception ->
+                                setError(exception.message.toString())
                                 exception.printStackTrace()
                                 _isLoading.value = false
                             }
@@ -219,9 +222,11 @@ class GroupViewModel @Inject constructor() : ViewModel() {
                     _isLoading.value = false
                     attemptCreateUniqueGroup(retryCount + 1, maxRetries)
                 }
-            }.addOnFailureListener {
+            }.addOnFailureListener { exception ->
+                setError(exception.message.toString())
                 _isLoading.value = false
-                Log.e("GroupCreation", "Error checking group ID existence", it)
+                exception.printStackTrace()
+                Log.e("GroupCreation", "Error checking group ID existence", exception)
             }
         }
         attemptCreateUniqueGroup()
@@ -296,6 +301,7 @@ class GroupViewModel @Inject constructor() : ViewModel() {
                     Log.d("JoinCircle", "User added to group successfully")
                 }
                 .addOnFailureListener { e ->
+                    setError(e.message.toString())
                     e.printStackTrace()
                     _error.value = "Failed to add user to group: ${e.message}"
                 }
@@ -306,6 +312,7 @@ class GroupViewModel @Inject constructor() : ViewModel() {
 
 
         }.addOnFailureListener { e ->
+            setError(e.message.toString())
             e.printStackTrace()
             _error.value = "Group not found: ${e.message}"
         }

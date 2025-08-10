@@ -89,7 +89,7 @@ fun InviteCodeScreen(code: String, onBack: () -> Unit = {}) {
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Text(
-                        text = "Invite members to the Family Circle",
+                        text = "Invite members to the Family Group",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1B0A2A),
