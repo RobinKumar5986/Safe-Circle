@@ -89,6 +89,7 @@ import com.google.maps.android.compose.MapType
 import com.kgjr.safecircle.LauncherActivity
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
+import com.kgjr.safecircle.ads.AdBannerView
 import com.kgjr.safecircle.models.SettingButtonType
 import com.kgjr.safecircle.theme.baseThemeColor
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
@@ -325,6 +326,7 @@ fun GroupScreen(
                             Column(
                                 modifier = Modifier.fillMaxSize()
                             ){
+                                AdBannerView(bannerId = MainApplication.HOME_AD_ID)
                                 Row(
                                     modifier = Modifier
                                         .horizontalScroll(checkingInListScrollState)

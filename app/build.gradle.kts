@@ -18,8 +18,8 @@ android {
         applicationId = "com.kgjr.safecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "1.1.4"
+        versionCode = 16
+        versionName = "1.1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -119,4 +119,7 @@ dependencies {
     //In app update dependency
     implementation("com.google.android.play:app-update:2.1.0")
     implementation("com.google.android.play:app-update-ktx:2.1.0")
+
+    //google ad dependency
+    implementation("com.google.android.gms:play-services-ads:24.5.0")
 }

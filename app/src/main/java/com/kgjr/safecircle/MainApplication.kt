@@ -44,6 +44,10 @@ class MainApplication: Application() {
         fun getScheduler(): AndroidAlarmSchedulerLooper {
             return instance.scheduler
         }
+
+        val TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111"
+        val HOME_AD_ID = "ca-app-pub-7602909356852315/6891375589"
+        val LOCATION_HISTORY_AD_ID = "ca-app-pub-7602909356852315/8472351883"
     }
 
     override fun onCreate() {

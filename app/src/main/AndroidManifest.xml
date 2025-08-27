@@ -73,7 +73,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
-
         <receiver
             android:name=".broadcastReceiver.AlarmReceiver"
             android:exported="true"
@@ -82,17 +81,18 @@
             android:name=".broadcastReceiver.AlarmReceiverLooper"
             android:exported="true"
             tools:ignore="ExportedReceiver" />
-
-
         <service
             android:name=".service.AlarmForegroundService"
             android:foregroundServiceType="location"
             android:exported="false" />
-
         <service
             android:name=".service.AlarmForegroundServiceLooper"
             android:foregroundServiceType="location"
             android:exported="false" />
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7602909356852315~7821878526"/>
     </application>
 
 </manifest>

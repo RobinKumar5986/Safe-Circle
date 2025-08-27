@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.kgjr.safecircle.MainApplication
+import com.kgjr.safecircle.ads.AdBannerView
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 
 @Composable
@@ -62,44 +64,55 @@ fun LocationHistoryScreen(userId: String) {
                 .align(Alignment.BottomCenter)
                 .background(Color.White)
         ) {
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
 
-                locationHistory.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No location history available",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
+            Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AdBannerView(bannerId = MainApplication.LOCATION_HISTORY_AD_ID)
                 }
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
 
-                else -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        locationHistory.forEachIndexed { index, group ->
-                            LocationGroupItem(
-                                group = group,
-                                isSelected = index == selectedGroupIndex,
-                                onClick = { selectedGroupIndex = index }
+                    locationHistory.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No location history available",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(16.dp)
                             )
+                        }
+                    }
+
+                    else -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            locationHistory.forEachIndexed { index, group ->
+                                LocationGroupItem(
+                                    group = group,
+                                    isSelected = index == selectedGroupIndex,
+                                    onClick = { selectedGroupIndex = index }
+                                )
+                            }
                         }
                     }
                 }
