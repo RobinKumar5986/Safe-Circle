@@ -326,7 +326,7 @@ fun GroupScreen(
                             Column(
                                 modifier = Modifier.fillMaxSize()
                             ){
-                                AdBannerView(bannerId = MainApplication.HOME_AD_ID)
+//                                AdBannerView(bannerId = MainApplication.HOME_AD_ID)
                                 Row(
                                     modifier = Modifier
                                         .horizontalScroll(checkingInListScrollState)

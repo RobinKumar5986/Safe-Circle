@@ -72,7 +72,7 @@ fun LocationHistoryScreen(userId: String) {
                         .padding(top = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    AdBannerView(bannerId = MainApplication.LOCATION_HISTORY_AD_ID)
+//                    AdBannerView(bannerId = MainApplication.LOCATION_HISTORY_AD_ID)
                 }
                 when {
                     isLoading -> {
