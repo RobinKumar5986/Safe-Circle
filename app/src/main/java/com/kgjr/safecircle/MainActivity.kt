@@ -31,6 +31,7 @@ import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.ktx.installStatus
 import com.google.android.play.core.ktx.isFlexibleUpdateAllowed
 import com.google.android.play.core.ktx.isImmediateUpdateAllowed
+import com.kgjr.safecircle.fcm.FcmManager
 import com.kgjr.safecircle.theme.SafeCircleTheme
 import com.kgjr.safecircle.ui.navigationGraph.MainGraph
 import dagger.hilt.android.AndroidEntryPoint
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
         }
         MainApplication.getSharedPreferenceManager().saveLooperEnabled(false)
         checkForAppUpdate()
+
         setContent {
             SafeCircleTheme {
                 enableEdgeToEdge()

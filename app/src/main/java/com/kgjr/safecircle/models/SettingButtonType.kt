@@ -4,5 +4,6 @@ enum class SettingButtonType {
     SHARE_APP,
     PRIVACY_SECURITY,
     HELP_AND_FEEDBACK,
-    LOGOUT
+    LOGOUT,
+    NOTIFICATION_SETUP
 }

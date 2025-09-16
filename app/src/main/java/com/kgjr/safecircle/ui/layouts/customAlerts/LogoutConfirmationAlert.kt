@@ -1,4 +1,4 @@
-package com.kgjr.safecircle.ui.layouts
+package com.kgjr.safecircle.ui.layouts.customAlerts
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

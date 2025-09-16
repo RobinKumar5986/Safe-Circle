@@ -89,9 +89,12 @@ import com.google.maps.android.compose.MapType
 import com.kgjr.safecircle.LauncherActivity
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.R
-import com.kgjr.safecircle.ads.AdBannerView
+import com.kgjr.safecircle.fcm.FcmManager
 import com.kgjr.safecircle.models.SettingButtonType
 import com.kgjr.safecircle.theme.baseThemeColor
+import com.kgjr.safecircle.ui.layouts.customAlerts.HelpAndSupportDialog
+import com.kgjr.safecircle.ui.layouts.customAlerts.LogoutConfirmationDialog
+import com.kgjr.safecircle.ui.layouts.customAlerts.NotificationSetupTourAlert
 import com.kgjr.safecircle.ui.navigationGraph.subGraphs.HomeIds
 import com.kgjr.safecircle.ui.utils.BackgroundApiManagerUtil
 import com.kgjr.safecircle.ui.utils.LocationActivityManager
@@ -118,6 +121,8 @@ fun GroupScreen(
     val scope = rememberCoroutineScope()
 
     var createNewCircle by remember { mutableStateOf(false) }
+    var isStartNotificationTour by remember { mutableStateOf(false) }
+    val userDataWithLocation by viewModel.groupWithLocation.collectAsState()
     var createNewCircleAnimation by remember { mutableStateOf(false) }
 
     var joinNewCircle by remember { mutableStateOf(false) }
@@ -160,6 +165,21 @@ fun GroupScreen(
     LaunchedEffect(Unit) {
         BackgroundApiManagerUtil.uploadAllPendingData()
     }
+    LaunchedEffect(Unit) {
+        //Saving FCM Token
+        if(!sharedPreferenceManager.getIsFCMTokenSaved()) {
+            FcmManager.registerForFcmToken() { fcmToken ->
+                if (adminId != null && userName != null) {
+                    viewModel.saveFCMTokenForTheDevice(
+                        fcmToken = fcmToken,
+                        userId = adminId,
+                        userName = userName,
+                        profileUrl = profileImageUrl ?: ""
+                    )
+                }
+            }
+        }
+    }
     LaunchedEffect(error) {
         if(error != null){
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
@@ -185,8 +205,6 @@ fun GroupScreen(
             Log.d("SafeCircle", "ACTIVITY_RECOGNITION not required for SDK < 29")
         }
     }
-
-
     LaunchedEffect(Unit) {
         println("Looper Data")
         Log.d("SafeCircle", MainApplication.getSharedPreferenceManager().getIsUpdateLocationApiCalledLooper().toString())
@@ -203,7 +221,6 @@ fun GroupScreen(
             }
         }
     }
-
     BackHandler(enabled = isCreateNewCircleTopSheet) {
         isCreateNewCircleTopSheet = false
     }
@@ -214,6 +231,10 @@ fun GroupScreen(
     BackHandler(enabled = createNewCircle ) {
         createNewCircleAnimation = false
         createNewCircle = false
+    }
+
+    if(!sharedPreferenceManager.getNotificationSetupTour() && userDataWithLocation.isNotEmpty()){
+        isStartNotificationTour = true
     }
     if (!isLoading) {
         if(createNewCircle){
@@ -779,9 +800,26 @@ fun GroupScreen(
                     SettingButtonType.LOGOUT -> {
                         showLogoutDialog.value = true
                     }
+                    SettingButtonType.NOTIFICATION_SETUP -> {
+                        nav(HomeIds.NOTIFICATION_SETUP_SCREEN,"")
+                    }
                 }
             }
         }
+    }
+
+
+    //@Mark notification setup tour
+    if(isStartNotificationTour){
+        NotificationSetupTourAlert(onStart = {
+            sharedPreferenceManager.setNotificationSetupTour(true)
+            nav(HomeIds.NOTIFICATION_SETUP_SCREEN,"")
+        }, onCancel = {
+//            isStartNotificationTour = false
+            //TODO: in future if allow the users to skip the tour
+
+        })
+
     }
 
 }

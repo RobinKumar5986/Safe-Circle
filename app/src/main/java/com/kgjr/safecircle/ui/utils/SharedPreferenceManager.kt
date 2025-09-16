@@ -269,7 +269,40 @@ class SharedPreferenceManager(context: Context) {
         sharedPreferences.edit { remove("archived_locations_local") }
     }
 
+    // --- Save FCM Token---
+    fun saveIsFCMTokenCalled(isFcmToken: Boolean) {
+        sharedPreferences.edit {
+            putBoolean("is_fcm_token_saved", isFcmToken)
+        }
+    }
+    // --- Is FCM Token Saved ---
+    fun getIsFCMTokenSaved(): Boolean {
+        return sharedPreferences.getBoolean("is_fcm_token_saved", false)
+    }
 
+    // --- Save FCM Token String ---
+    fun saveFCMTokenString(token: String) {
+        sharedPreferences.edit {
+            putString("fcm_token", token)
+        }
+    }
+
+    // --- Get FCM Token String ---
+    fun getFCMTokenString(): String? {
+        return sharedPreferences.getString("fcm_token", null)
+    }
+
+    // --- set notification setup tour ---
+    fun setNotificationSetupTour(isNotificationTour: Boolean) {
+        sharedPreferences.edit {
+            putBoolean("is_notification_tour_done", isNotificationTour)
+        }
+    }
+
+    // ---get FCM Token Saved ---
+    fun getNotificationSetupTour(): Boolean {
+        return sharedPreferences.getBoolean("is_notification_tour_done", false)
+    }
 
     // ---- Clear all SharedPreferences data ----//
     fun clearSharedPreference() {

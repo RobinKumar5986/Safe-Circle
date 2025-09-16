@@ -7,7 +7,8 @@ import com.kgjr.safecircle.ui.layouts.AddPlaceScreen
 import com.kgjr.safecircle.ui.layouts.CustomTopBar
 import com.kgjr.safecircle.ui.layouts.InviteCodeScreen
 import com.kgjr.safecircle.ui.layouts.JoinCircleScreen
-import com.kgjr.safecircle.ui.layouts.LogoutConfirmationDialog
+import com.kgjr.safecircle.ui.layouts.NotificationSetupScreen
+import com.kgjr.safecircle.ui.layouts.customAlerts.LogoutConfirmationDialog
 import com.kgjr.safecircle.ui.layouts.PlaceCheckInScreen
 
 
@@ -65,6 +66,14 @@ fun CustomTopBarPreview(){
     CustomTopBar(
         profileUrl = "https://picsum.photos/536/354"
     ){
+
+    }
+}
+
+@Preview
+@Composable
+fun NotificationSetupScreenPreview(){
+    NotificationSetupScreen(){
 
     }
 }

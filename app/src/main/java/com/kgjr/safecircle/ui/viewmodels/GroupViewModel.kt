@@ -11,7 +11,6 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.MutableData
 import com.google.firebase.database.Transaction
 import com.google.firebase.database.ValueEventListener
-import com.google.gson.Gson
 import com.kgjr.safecircle.MainApplication
 import com.kgjr.safecircle.models.ArchiveLocationData
 import com.kgjr.safecircle.models.Group
@@ -570,4 +569,31 @@ class GroupViewModel @Inject constructor() : ViewModel() {
             }
     }
 
+    fun saveFCMTokenForTheDevice(
+        fcmToken: String,
+        userId: String,
+        profileUrl: String,
+        userName: String
+    ) {
+        val dbRef = FirebaseDatabase.getInstance()
+            .getReference("FcmTokens")
+            .child("Users")
+            .child(userId)
+
+        val map = mapOf(
+            "fcmToken" to fcmToken,
+            "profileUrl" to profileUrl,
+            "userName" to userName,
+            "timestamp" to System.currentTimeMillis()
+        )
+
+        dbRef.setValue(map)
+            .addOnSuccessListener {
+                sharedPref.saveFCMTokenString(fcmToken)
+                sharedPref.saveIsFCMTokenCalled(true)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FCM", "Failed to save FCM token: ${e.message}", e)
+            }
+    }
 }

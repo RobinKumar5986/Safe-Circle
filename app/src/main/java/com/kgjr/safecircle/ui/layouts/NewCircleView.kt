@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -43,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.kgjr.safecircle.theme.DarkText
 import com.kgjr.safecircle.theme.LightGrayBackground
 import com.kgjr.safecircle.theme.primaryVariant
+import com.kgjr.safecircle.ui.layouts.customAlerts.CreateGroupAlert
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +52,8 @@ fun NameCircleScreen(
     onBackPress: () -> Unit
 ) {
     var circleNameInput by remember { mutableStateOf("") }
+    var currentCircleName by remember { mutableStateOf("") }
+    var isConfirmGroupName by remember { mutableStateOf(false) }
 
     val predefinedSuggestions = remember {
         listOf(
@@ -165,13 +167,29 @@ fun NameCircleScreen(
                 ) {
                     items(currentSuggestions) { suggestion ->
                         SuggestionItem(suggestion = suggestion, onSelect = { circleName ->
-                            createNewCircle(circleName)
+                            currentCircleName = circleName
+                            isConfirmGroupName = true
                         })
                     }
                 }
             }
         }
     )
+    if (isConfirmGroupName) {
+        CreateGroupAlert(
+            groupName = "Family Group",
+            onConfirm = {
+                isConfirmGroupName = false
+                if (!currentCircleName.isEmpty()) {
+                    createNewCircle(currentCircleName)
+                }
+            },
+            onCancel = {
+                isConfirmGroupName = false
+                currentCircleName = ""
+            }
+        )
+    }
 }
 @Composable
 fun SuggestionItem(suggestion: String, onSelect: (String) -> Unit) {

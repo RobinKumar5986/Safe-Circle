@@ -40,6 +40,14 @@ fun SettingsSheetContent(
             )
         }
 
+        SettingsRow(
+            title = "Setup Notification",
+            iconRes = R.drawable.notification,
+            showRedDot = false,
+            onClick = { onItemClick(SettingButtonType.NOTIFICATION_SETUP) }
+        )
+
+        Divider(color = Color.LightGray.copy(alpha = 0.4f))
 
         SettingsRow(
             title = "Share Safe Circle",
