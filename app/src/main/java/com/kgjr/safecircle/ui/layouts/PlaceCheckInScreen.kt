@@ -228,7 +228,7 @@ fun PlaceCheckInScreen(
             }
         }
     }else{
-        CustomLoadingScreen()
+        CustomLottieAnimationView()
     }
     if (showDeleteDialog && placeToDelete != null) {
         AlertDialog(

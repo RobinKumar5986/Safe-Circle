@@ -334,7 +334,7 @@ fun GroupScreen(
                                         createNewCircle = true
                                         scope.launch {
                                             delay(10)
-                                            createNewCircleAnimation = true
+                                            joinNewCircleAnimation = true
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
@@ -739,7 +739,7 @@ fun GroupScreen(
         }
 
     } else {
-        CustomLoadingScreen()
+        CustomLottieAnimationView()
     }
     if (showLogoutDialog.value) {
         LogoutConfirmationDialog(

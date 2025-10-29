@@ -96,11 +96,7 @@ fun SignUpView(
         }
         if (googleButtonClick.value) {
             // Show loading indicator instead of button
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            )
+            CircularProgressIndicator()
         } else {
             // Google Sign-Up Button
             Button(

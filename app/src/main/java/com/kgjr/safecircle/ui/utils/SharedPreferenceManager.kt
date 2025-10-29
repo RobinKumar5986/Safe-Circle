@@ -24,6 +24,44 @@ class SharedPreferenceManager(context: Context) {
         val user = json?.let { gson.fromJson(it, User::class.java) }
         return user
     }
+    // ---- Last Place Check Trigger Time ----
+    fun saveLastPlaceCheckTriggerTime(timeMillis: Long) {
+        sharedPreferences.edit {
+            putLong("last_place_check_trigger_time", timeMillis)
+        }
+    }
+
+    fun getLastPlaceCheckTriggerTime(): Long {
+        return sharedPreferences.getLong("last_place_check_trigger_time", 0L)
+    }
+
+    // ---- Notification User IDs ----
+    fun saveUserIdsForNotification(userIds: Set<String>) {
+        sharedPreferences.edit {
+            putStringSet("user_ids_for_notification", userIds)
+        }
+    }
+
+    fun getUserIdsForNotification(): Set<String> {
+        return sharedPreferences.getStringSet("user_ids_for_notification", emptySet()) ?: emptySet()
+    }
+
+    //---------- FCM tokens for notifications -----
+    fun saveFcmTokens(fcmTokens: Map<String, String>) {
+        val json = Gson().toJson(fcmTokens)
+        sharedPreferences.edit {
+            putString("fcm_tokens", json)
+        }
+    }
+
+    fun getFcmTokens(): Map<String, String> {
+        val json = sharedPreferences.getString("fcm_tokens", null)
+        return if (json != null) {
+            Gson().fromJson(json, object : TypeToken<Map<String, String>>() {}.type)
+        } else {
+            emptyMap()
+        }
+    }
 
     // ---- Group ----
     fun saveGroup(group: Group?) {

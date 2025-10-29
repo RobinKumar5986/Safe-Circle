@@ -15,8 +15,11 @@ import com.kgjr.safecircle.models.NominatimResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
+import org.json.JSONObject
 import java.io.IOException
 import java.util.Calendar
 
@@ -306,6 +309,7 @@ object BackgroundApiManagerUtil {
 
             locRef.setValue(dataToSet)
                 .addOnSuccessListener {
+                    sendNotificationForPlaceChecking(lat = lat, lng = lng)
                     if (!completed) {
                         Log.d("FirebaseV2", "Last recorded location saved successfully.")
                         onCompletion()
@@ -500,6 +504,9 @@ object BackgroundApiManagerUtil {
 
             locRef.push().setValue(uploadData)
                 .addOnSuccessListener {
+                    if(lat != null && lng != null) {
+                        sendNotificationForPlaceChecking(lat = lat as Double, lng = lng as Double)
+                    }
                     Log.d("FirebaseV2", "Uploaded pending data: $uploadData")
                     allData.remove(data)
                     sharedPref.updateArchivedLocations(allData)
@@ -510,6 +517,72 @@ object BackgroundApiManagerUtil {
                 .addOnFailureListener { e ->
                     Log.e("FirebaseV2", "Failed to upload pending data: ${e.message}")
                 }
+        }
+    }
+
+    fun sendNotificationForPlaceChecking(lat: Double, lng: Double) {
+        val sharedPreferenceManager = MainApplication.getSharedPreferenceManager()
+
+        val lastTriggerTime = sharedPreferenceManager.getLastPlaceCheckTriggerTime()
+        val currentTime = System.currentTimeMillis()
+        val tenMinutesInMillis = 10 * 60 * 1000
+
+        if (currentTime - lastTriggerTime < tenMinutesInMillis) {
+            return
+        }
+        sharedPreferenceManager.saveLastPlaceCheckTriggerTime(currentTime)
+
+        val placeCheckins = sharedPreferenceManager.getPlaceCheckins()
+        val fcmTokens = sharedPreferenceManager.getFcmTokens()
+        val user = MainApplication.getGoogleAuthUiClient().getSignedInUser()
+        val userName = user?.userName ?: "Someone"
+        val profileImageUrl = user?.profileUrl ?: ""
+        val lastSavedLocation = sharedPreferenceManager.getLastLocation()
+
+        if (placeCheckins.isEmpty() || fcmTokens.isEmpty()) return
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val client = OkHttpClient()
+            val apiUrl = "https://sendcustomnotification-yshvdyz2ka-uc.a.run.app"
+
+            for (place in placeCheckins) {
+                val distance = FloatArray(1)
+                Location.distanceBetween(lat, lng, place.lat, place.lng, distance)
+                val isInside = distance[0] <= (place.radiusInFeet * 0.3048)
+
+                val wasInside = lastSavedLocation?.let {
+                    val prevDistance = FloatArray(1)
+                    Location.distanceBetween(it.latitude, it.longitude, place.lat, place.lng, prevDistance)
+                    prevDistance[0] <= (place.radiusInFeet * 0.3048)
+                } ?: false
+
+                val movementType = when {
+                    !wasInside && isInside -> "entered"
+                    wasInside && !isInside -> "left"
+                    else -> null
+                } ?: continue
+
+                for ((_, token) in fcmTokens) {
+                    val json = JSONObject().apply {
+                        put("token", token)
+                        put("message", "$userName has $movementType ${place.placeName}!")
+                        if (profileImageUrl.isNotEmpty()) put("imageUrl", profileImageUrl)
+                    }
+
+                    val body = RequestBody.create(
+                        "application/json".toMediaTypeOrNull(),
+                        json.toString()
+                    )
+
+                    val request = Request.Builder()
+                        .url(apiUrl)
+                        .post(body)
+                        .addHeader("Content-Type", "application/json")
+                        .build()
+
+                    runCatching { client.newCall(request).execute().close() }
+                }
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.kgjr.safecircle.ui.layouts
 
+import androidx.annotation.RawRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +21,13 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.kgjr.safecircle.R
 
 @Composable
-fun CustomLoadingScreen(
+fun CustomLottieAnimationView(
+    @RawRes animationResId: Int = R.raw.loading_anim,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = Color.White
+    backgroundColor: Color = Color.White,
+    iterations: Int = LottieConstants.IterateForever
 ) {
-    var compositionSpec by remember { mutableStateOf(LottieCompositionSpec.RawRes(R.raw.loading_anim)) }
+    var compositionSpec by remember { mutableStateOf(LottieCompositionSpec.RawRes(animationResId)) }
     val composition by rememberLottieComposition(spec = compositionSpec)
     Box(
         modifier = modifier
@@ -35,7 +38,7 @@ fun CustomLoadingScreen(
         LottieAnimation(
             modifier = Modifier.size(300.dp),
             composition = composition,
-            iterations = LottieConstants.IterateForever,
+            iterations = iterations,
         )
     }
 }
