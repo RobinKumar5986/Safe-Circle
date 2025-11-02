@@ -39,7 +39,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.TabRowDefaults.Divider
+import androidx.compose.material.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.BottomSheetScaffold
@@ -70,7 +70,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -92,6 +91,7 @@ import com.kgjr.safecircle.R
 import com.kgjr.safecircle.fcm.FcmManager
 import com.kgjr.safecircle.models.SettingButtonType
 import com.kgjr.safecircle.theme.baseThemeColor
+import com.kgjr.safecircle.theme.sosRed
 import com.kgjr.safecircle.ui.layouts.customAlerts.HelpAndSupportDialog
 import com.kgjr.safecircle.ui.layouts.customAlerts.LogoutConfirmationDialog
 import com.kgjr.safecircle.ui.layouts.customAlerts.NotificationSetupTourAlert
@@ -448,32 +448,81 @@ fun GroupScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(16.dp)
                             .align(Alignment.BottomCenter)
-                            .offset(y = (-370).dp)
-                            .padding(end = 16.dp, bottom = 8.dp)
-                            .alpha(alpha),
-                        horizontalArrangement = Arrangement.End
+                            .offset(y = (-370).dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // ---- Check-In Button ----
+                        Box(
+                            modifier = Modifier
+                                .background(Color.White, shape = RoundedCornerShape(50))
+                                .clickable {
+                                    nav(HomeIds.LOCATION_CHECKING_IN_PLACE,"")
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.baseline_edit_location_24),
+                                    contentDescription = "Location",
+                                    modifier = Modifier.size(20.dp),
+                                    colorFilter = ColorFilter.tint(baseThemeColor)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Check In", color = baseThemeColor, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // ---- SOS Button ----
+                        Box(
+                            modifier = Modifier
+                                .background(Color.White, shape = RoundedCornerShape(50))
+                                .padding(end = 16.dp)
+                                .clickable {
+                                    if(sharedPreferenceManager.isNotificationSetupCompleted()){
+                                        nav(HomeIds.SOS_SCREEN,"")
+                                    }else{
+                                        Toast.makeText(context,"Complete the notification setup first", Toast.LENGTH_SHORT).show()
+                                        nav(HomeIds.NOTIFICATION_SETUP_SCREEN,"")
+                                    }
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.sos),
+                                    contentDescription = "SOS Icon",
+                                    modifier = Modifier.size(20.dp),
+                                    colorFilter = ColorFilter.tint(sosRed)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("SOS", color = sosRed, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // ---- Layer Circular Button ----
                         Box(
                             modifier = Modifier
                                 .size(35.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
-
                                 .clickable {
-                                    scope.launch {
-                                        isChangeLayer = true
-                                    }
+                                    scope.launch { isChangeLayer = true }
                                 },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.layer),
-                                contentDescription = "Create Group",
-                                modifier = Modifier
-                                    .size(24.dp),
+                                contentDescription = "Layer Icon",
+                                modifier = Modifier.size(24.dp),
                                 colorFilter = ColorFilter.tint(baseThemeColor)
-
                             )
                         }
                     }
@@ -817,7 +866,6 @@ fun GroupScreen(
         }, onCancel = {
 //            isStartNotificationTour = false
             //TODO: in future if allow the users to skip the tour
-
         })
 
     }

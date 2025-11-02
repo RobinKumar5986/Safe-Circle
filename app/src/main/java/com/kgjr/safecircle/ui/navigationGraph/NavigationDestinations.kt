@@ -13,4 +13,5 @@ object NavigationDestinations {
     const val locationHistoryScreen  = "LOCATION_HISTORY/{userId}"
     const val locationCheckIn  = "LOCATION_CHECKING_IN"
     const val notificationSetupScreen  = "NOTIFICATION_SETUP_SCREEN"
+    const val sosScreen  = "SOS_SCREEN"
 }

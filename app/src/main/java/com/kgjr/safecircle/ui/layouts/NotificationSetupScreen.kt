@@ -304,6 +304,7 @@ fun NotificationSetupScreen(
         }, onConfirm = {
             isConfirmNotification = false
             sharedPreferenceManager.saveUserIdsForNotification(selectedUserIds)
+            sharedPreferenceManager.saveNotificationSetupCompleted(true)
             showLoadingAnimation = true
             viewModel.getAllFcmTokenForTheUsers(selectedUserIds, onComplete = {
                 showLoadingAnimation = false

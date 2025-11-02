@@ -585,4 +585,73 @@ object BackgroundApiManagerUtil {
             }
         }
     }
+
+    fun sendSosNotification(lat: Double, lng: Double) {
+        val sharedPreferenceManager = MainApplication.getSharedPreferenceManager()
+        val userIdsForNotification = sharedPreferenceManager.getUserIdsForNotification()
+        val user = MainApplication.getGoogleAuthUiClient().getSignedInUser()
+
+        val userName = user?.userName ?: "Someone"
+        val profileImageUrl = user?.profileUrl ?: ""
+
+        if (userIdsForNotification.isEmpty()) {
+            Log.w("SOSNotification", "No user IDs found for notification.")
+            return
+        }
+
+        val dbRef = FirebaseDatabase.getInstance().getReference("FcmTokens/Users")
+        val client = OkHttpClient()
+        val apiUrl = "https://sendsosnotification-yshvdyz2ka-uc.a.run.app"
+
+        for (userId in userIdsForNotification) {
+            dbRef.child(userId).child("fcmToken").get()
+                .addOnSuccessListener { snapshot ->
+                    val token = snapshot.getValue(String::class.java)
+                    if (token != null) {
+                        Log.d("SOSNotification", "Fetched FCM token for user : $token")
+                        // Immediately send SOS for this token
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val json = JSONObject().apply {
+                                put("token", token)
+                                put("lat", lat.toString())
+                                put("lng", lng.toString())
+                                put("name", userName)
+                                if (profileImageUrl.isNotEmpty()) {
+                                    put("profileImageUrl", profileImageUrl)
+                                }
+                            }
+
+                            val body = RequestBody.create(
+                                "application/json".toMediaTypeOrNull(),
+                                json.toString()
+                            )
+
+                            val request = Request.Builder()
+                                .url(apiUrl)
+                                .post(body)
+                                .addHeader("Content-Type", "application/json")
+                                .build()
+
+                            runCatching {
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        Log.d("SOSNotification", "SOS sent successfully ")
+                                    } else {
+                                        Log.e("SOSNotification", "Failed to send SOS to: ${response.code}")
+                                    }
+                                }
+                            }.onFailure {
+                                Log.e("SOSNotification", "Error sending SOS ", it)
+                            }
+                        }
+                    } else {
+                        Log.w("SOSNotification", "No FCM token found for user")
+                    }
+                }
+                .addOnFailureListener {
+                    Log.e("SOSNotification", "Failed to fetch FCM token for user", it)
+                }
+        }
+    }
+
 }

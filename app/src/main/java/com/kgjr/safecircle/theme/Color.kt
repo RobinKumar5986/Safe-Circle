@@ -65,6 +65,7 @@ val lightRed = Color(0xFFFFE6E6)
 val buttonLightGray = Color(0xFFF0F0F0)
 val contactButtonBackground = Color(0xFFBBDEFB)
 val contactButtonTextColor = Color(0xFF0D47A1)
+val sosRed = Color(0xFFFF6B6B)
 
 
 

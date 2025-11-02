@@ -11,6 +11,7 @@ import com.kgjr.safecircle.ui.layouts.InviteCodeScreen
 import com.kgjr.safecircle.ui.layouts.LocationHistoryScreen
 import com.kgjr.safecircle.ui.layouts.NotificationSetupScreen
 import com.kgjr.safecircle.ui.layouts.PlaceCheckInScreen
+import com.kgjr.safecircle.ui.layouts.SosScreen
 import com.kgjr.safecircle.ui.navigationGraph.NavigationDestinations
 
 fun NavGraphBuilder.homeScreenGraph(navController: NavController){
@@ -32,6 +33,9 @@ fun NavGraphBuilder.homeScreenGraph(navController: NavController){
                     }
                     HomeIds.NOTIFICATION_SETUP_SCREEN -> {
                         navController.navigate(NavigationDestinations.notificationSetupScreen)
+                    }
+                    HomeIds.SOS_SCREEN -> {
+                        navController.navigate(NavigationDestinations.sosScreen)
                     }
                 }
             }
@@ -60,6 +64,11 @@ fun NavGraphBuilder.homeScreenGraph(navController: NavController){
                 navController.popBackStack()
             }
         }
+        composable(NavigationDestinations.sosScreen){
+            SosScreen(){
+                navController.popBackStack()
+            }
+        }
     }
 }
 
@@ -67,5 +76,6 @@ enum class HomeIds{
     ADD_TO_CIRCLE,
     LOCATION_HISTORY,
     LOCATION_CHECKING_IN_PLACE,
-    NOTIFICATION_SETUP_SCREEN
+    NOTIFICATION_SETUP_SCREEN,
+    SOS_SCREEN
 }

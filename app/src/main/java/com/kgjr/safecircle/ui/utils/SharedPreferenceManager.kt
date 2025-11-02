@@ -34,6 +34,17 @@ class SharedPreferenceManager(context: Context) {
     fun getLastPlaceCheckTriggerTime(): Long {
         return sharedPreferences.getLong("last_place_check_trigger_time", 0L)
     }
+    // ---- Notification Setup Completed ----
+    fun saveNotificationSetupCompleted(isCompleted: Boolean) {
+        sharedPreferences.edit {
+            putBoolean("is_notification_setup_completed", isCompleted)
+        }
+    }
+
+    fun isNotificationSetupCompleted(): Boolean {
+        return sharedPreferences.getBoolean("is_notification_setup_completed", false)
+    }
+
 
     // ---- Notification User IDs ----
     fun saveUserIdsForNotification(userIds: Set<String>) {

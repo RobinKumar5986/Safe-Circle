@@ -10,7 +10,7 @@ import com.kgjr.safecircle.ui.layouts.JoinCircleScreen
 import com.kgjr.safecircle.ui.layouts.NotificationSetupScreen
 import com.kgjr.safecircle.ui.layouts.customAlerts.LogoutConfirmationDialog
 import com.kgjr.safecircle.ui.layouts.PlaceCheckInScreen
-
+import com.kgjr.safecircle.ui.layouts.SOSTriggerScreen
 
 
 @Preview(showBackground = true)
@@ -76,4 +76,13 @@ fun NotificationSetupScreenPreview(){
     NotificationSetupScreen(){
 
     }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun SOSTriggerScreenPreview() {
+    SOSTriggerScreen(
+        onClick = {
+        }
+    )
 }
