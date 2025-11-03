@@ -331,7 +331,7 @@ fun GroupScreen(
                                 Button(
                                     onClick = {
                                         isCreateNewCircleTopSheet = false
-                                        createNewCircle = true
+                                        joinNewCircle = true
                                         scope.launch {
                                             delay(10)
                                             joinNewCircleAnimation = true
