@@ -177,7 +177,7 @@ fun NameCircleScreen(
     )
     if (isConfirmGroupName) {
         CreateGroupAlert(
-            groupName = "Family Group",
+            groupName = currentCircleName,
             onConfirm = {
                 isConfirmGroupName = false
                 if (!currentCircleName.isEmpty()) {

@@ -525,7 +525,7 @@ object BackgroundApiManagerUtil {
 
         val lastTriggerTime = sharedPreferenceManager.getLastPlaceCheckTriggerTime()
         val currentTime = System.currentTimeMillis()
-        val tenMinutesInMillis = 10 * 60 * 1000
+        val tenMinutesInMillis = 10 * 60 * 1000 // minimum 10 min gap b.w the notification
 
         if (currentTime - lastTriggerTime < tenMinutesInMillis) {
             return
@@ -533,18 +533,19 @@ object BackgroundApiManagerUtil {
         sharedPreferenceManager.saveLastPlaceCheckTriggerTime(currentTime)
 
         val placeCheckins = sharedPreferenceManager.getPlaceCheckins()
-        val fcmTokens = sharedPreferenceManager.getFcmTokens()
+        val userIdsForNotification = sharedPreferenceManager.getUserIdsForNotification()
         val user = MainApplication.getGoogleAuthUiClient().getSignedInUser()
         val userName = user?.userName ?: "Someone"
         val profileImageUrl = user?.profileUrl ?: ""
         val lastSavedLocation = sharedPreferenceManager.getLastLocation()
 
-        if (placeCheckins.isEmpty() || fcmTokens.isEmpty()) return
+        if (placeCheckins.isEmpty() || userIdsForNotification.isEmpty()) return
+
+        val dbRef = FirebaseDatabase.getInstance().getReference("FcmTokens/Users")
+        val client = OkHttpClient()
+        val apiUrl = "https://sendcustomnotification-yshvdyz2ka-uc.a.run.app"
 
         CoroutineScope(Dispatchers.IO).launch {
-            val client = OkHttpClient()
-            val apiUrl = "https://sendcustomnotification-yshvdyz2ka-uc.a.run.app"
-
             for (place in placeCheckins) {
                 val distance = FloatArray(1)
                 Location.distanceBetween(lat, lng, place.lat, place.lng, distance)
@@ -562,29 +563,38 @@ object BackgroundApiManagerUtil {
                     else -> null
                 } ?: continue
 
-                for ((_, token) in fcmTokens) {
-                    val json = JSONObject().apply {
-                        put("token", token)
-                        put("message", "$userName has $movementType ${place.placeName}!")
-                        if (profileImageUrl.isNotEmpty()) put("imageUrl", profileImageUrl)
-                    }
+                for (userId in userIdsForNotification) {
+                    dbRef.child(userId).child("fcmToken").get()
+                        .addOnSuccessListener { snapshot ->
+                            val token = snapshot.getValue(String::class.java)
+                            if (token != null) {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    val json = JSONObject().apply {
+                                        put("token", token)
+                                        put("message", "$userName has $movementType ${place.placeName}!")
+                                        if (profileImageUrl.isNotEmpty()) put("imageUrl", profileImageUrl)
+                                    }
 
-                    val body = RequestBody.create(
-                        "application/json".toMediaTypeOrNull(),
-                        json.toString()
-                    )
+                                    val body = RequestBody.create(
+                                        "application/json".toMediaTypeOrNull(),
+                                        json.toString()
+                                    )
 
-                    val request = Request.Builder()
-                        .url(apiUrl)
-                        .post(body)
-                        .addHeader("Content-Type", "application/json")
-                        .build()
+                                    val request = Request.Builder()
+                                        .url(apiUrl)
+                                        .post(body)
+                                        .addHeader("Content-Type", "application/json")
+                                        .build()
 
-                    runCatching { client.newCall(request).execute().close() }
+                                    runCatching { client.newCall(request).execute().close() }
+                                }
+                            }
+                        }
                 }
             }
         }
     }
+
 
     fun sendSosNotification(lat: Double, lng: Double) {
         val sharedPreferenceManager = MainApplication.getSharedPreferenceManager()
