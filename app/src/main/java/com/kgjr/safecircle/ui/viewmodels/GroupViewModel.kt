@@ -21,6 +21,7 @@ import com.kgjr.safecircle.models.SavedPlaceData
 import com.kgjr.safecircle.models.User
 import com.kgjr.safecircle.models.UserLastLocation
 import com.kgjr.safecircle.ui.utils.SharedPreferenceManager
+import com.kgjr.safecircle.ui.utils.helpers.HelperFunctions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -408,22 +409,16 @@ class GroupViewModel @Inject constructor() : ViewModel() {
 
                 pendingCalls--
                 if (pendingCalls == 0) {
-                    val sortedData = allDaysData
-                        .sortedByDescending { it.first }
-                        .map { it.second }
-
-                    _archiveLocationList.value = sortedData
+                    _archiveLocationList.value = HelperFunctions.filterArchiveLocationData(locationData = allDaysData)
                     _isLoadingForArchive.value = false
                 }
 
             }.addOnFailureListener {
                 pendingCalls--
                 if (pendingCalls == 0) {
-                    val sortedData = allDaysData
-                        .sortedByDescending { it.first }
-                        .map { it.second }
 
-                    _archiveLocationList.value = sortedData
+
+                    _archiveLocationList.value = HelperFunctions.filterArchiveLocationData(locationData = allDaysData)
                     _isLoadingForArchive.value = false
                 }
             }

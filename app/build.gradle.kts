@@ -18,15 +18,16 @@ android {
         applicationId = "com.kgjr.safecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
-        versionName = "1.1.9"
+        versionCode = 24
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

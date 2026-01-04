@@ -146,7 +146,9 @@ fun SOSTriggerScreen(onClick: () -> Unit) {
         // Subtitle / Info text
         Text(
             text = "Press the SOS button below to alert your emergency contacts.\n" +
-                    "Please use only in case of real emergency.",
+                    "Please use only in case of real emergency.\n " +
+                    "Press the text to call the emergency services."
+            ,
             style = MaterialTheme.typography.bodyLarge.copy(
                 color = Color.Gray,
                 textAlign = TextAlign.Center

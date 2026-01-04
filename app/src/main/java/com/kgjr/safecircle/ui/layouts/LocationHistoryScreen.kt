@@ -28,8 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.kgjr.safecircle.MainApplication
-import com.kgjr.safecircle.ads.AdBannerView
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
 
 @Composable
