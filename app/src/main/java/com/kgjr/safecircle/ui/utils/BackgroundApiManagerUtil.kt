@@ -303,13 +303,14 @@ object BackgroundApiManagerUtil {
                     completed = true
                 }
             }
+            sendNotificationForPlaceChecking(lat = lat, lng = lng)
 
             // Post the timeout runnable with a delay of 15 seconds
             handler.postDelayed(timeoutRunnable, 15000) // 30000 milliseconds = 30 seconds
 
             locRef.setValue(dataToSet)
                 .addOnSuccessListener {
-                    sendNotificationForPlaceChecking(lat = lat, lng = lng)
+
                     if (!completed) {
                         Log.d("FirebaseV2", "Last recorded location saved successfully.")
                         onCompletion()
@@ -501,12 +502,12 @@ object BackgroundApiManagerUtil {
                 "battery" to battery,
                 "address" to address
             )
-
+            if(lat != null && lng != null) {
+                sendNotificationForPlaceChecking(lat = lat as Double, lng = lng as Double)
+            }
             locRef.push().setValue(uploadData)
                 .addOnSuccessListener {
-                    if(lat != null && lng != null) {
-                        sendNotificationForPlaceChecking(lat = lat as Double, lng = lng as Double)
-                    }
+
                     Log.d("FirebaseV2", "Uploaded pending data: $uploadData")
                     allData.remove(data)
                     sharedPref.updateArchivedLocations(allData)
