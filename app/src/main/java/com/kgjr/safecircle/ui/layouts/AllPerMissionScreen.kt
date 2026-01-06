@@ -136,7 +136,7 @@ fun AllPermissionScreen(
         PermissionItemData(
             icon = Icons.Default.LocationOn,
             title = "Location Permission",
-            description = "Required to access the location so, that you and your loved ones can be safe.",
+            description = "Required to access the location so, that you and your loved ones can be safe.\nNote: we do not share any data with any third party company or app.",
             isGranted = isForegroundLocationGranted &&
                     (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || isBackgroundLocationGranted),
             onClick = {
