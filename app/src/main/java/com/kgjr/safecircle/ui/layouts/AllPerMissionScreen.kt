@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
@@ -26,12 +27,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kgjr.safecircle.R
+import com.kgjr.safecircle.theme.contactButtonBackground
+import com.kgjr.safecircle.ui.layouts.customAlerts.LocationPermissionAlert
 import com.kgjr.safecircle.ui.utils.*
 
 @Composable
@@ -40,7 +51,8 @@ fun AllPermissionScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-
+    var showLocationAlert by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
     // --- Optional DND access ---
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -136,23 +148,11 @@ fun AllPermissionScreen(
         PermissionItemData(
             icon = Icons.Default.LocationOn,
             title = "Location Permission",
-            description = "Required to access the location so, that you and your loved ones can be safe.\nNote: we do not share any data with any third party company or app.",
+            description = "Location data is used enable the in-app map, Place Alert, and Location Shearing with your Circle",
             isGranted = isForegroundLocationGranted &&
                     (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || isBackgroundLocationGranted),
             onClick = {
-                val currentFineGranted = LocationUtils.isFineLocationPermissionGranted(context)
-                val currentCoarseGranted = LocationUtils.isCoarseLocationPermissionGranted(context)
-
-                if (!currentFineGranted || !currentCoarseGranted) {
-                    foregroundLocationPermissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
-                    )
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isBackgroundLocationGranted) {
-                    showBackgroundLocationRationaleDialog = true
-                }
+                showLocationAlert = true
             }
         ),
         PermissionItemData(
@@ -243,6 +243,64 @@ fun AllPermissionScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
+
+            val annotatedText = buildAnnotatedString {
+                append("By allowing all the permission and continuing you are agreeing with our ")
+
+                // Start of clickable part
+                pushStringAnnotation(tag = "policy", annotation = "https://sites.google.com/view/kjjrsafecircle/home")
+                withStyle(style = SpanStyle(
+                    color = contactButtonBackground,
+                    textDecoration = TextDecoration.Underline,
+                    fontWeight = FontWeight.Bold
+                )
+                ) {
+                    append("privacy policy")
+                }
+                pop()
+
+                append(" and rest assured we are not selling any of your data to any third party company.")
+            }
+
+            ClickableText(
+                text = annotatedText,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                ),
+                modifier = Modifier.padding(top = 16.dp, bottom = 24.dp),
+                onClick = { offset ->
+                    annotatedText.getStringAnnotations(tag = "policy", start = offset, end = offset)
+                        .firstOrNull()?.let { annotation ->
+                            uriHandler.openUri(annotation.item)
+                        }
+                }
+            )
+
         }
+    }
+
+    if (showLocationAlert) {
+        LocationPermissionAlert(
+            onGoToSettings = {
+                showLocationAlert = false
+                val currentFineGranted = LocationUtils.isFineLocationPermissionGranted(context)
+                val currentCoarseGranted = LocationUtils.isCoarseLocationPermissionGranted(context)
+
+                if (!currentFineGranted || !currentCoarseGranted) {
+                    foregroundLocationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isBackgroundLocationGranted) {
+                    showBackgroundLocationRationaleDialog = true
+                }
+            },
+            onDismiss = {
+                showLocationAlert = false
+            }
+        )
     }
 }

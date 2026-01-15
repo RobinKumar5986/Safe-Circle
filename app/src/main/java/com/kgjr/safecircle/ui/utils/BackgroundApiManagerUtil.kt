@@ -22,6 +22,7 @@ import okhttp3.RequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Calendar
+import java.util.Locale
 
 object BackgroundApiManagerUtil {
 
@@ -268,6 +269,9 @@ object BackgroundApiManagerUtil {
             val lat = location.latitude
             val lng = location.longitude
 
+            ///as soon as new location come try to send the notification to all.
+            sendNotificationForPlaceChecking(lat = lat, lng = lng)
+
             val locRef = FirebaseDatabase.getInstance().getReference("Location")
                 .child("LastRecordedLocation")
                 .child(userId)
@@ -303,7 +307,6 @@ object BackgroundApiManagerUtil {
                     completed = true
                 }
             }
-            sendNotificationForPlaceChecking(lat = lat, lng = lng)
 
             // Post the timeout runnable with a delay of 15 seconds
             handler.postDelayed(timeoutRunnable, 15000) // 30000 milliseconds = 30 seconds
@@ -477,6 +480,11 @@ object BackgroundApiManagerUtil {
             val lat = data["latitude"]
             val lng = data["longitude"]
             val timeStamp = (data["timeStamp"] as? Number)?.toLong() ?: continue
+            ///try sending the notification for the late
+            if(lat != null && lng != null) {
+                sendNotificationForPlaceChecking(lat = lat as Double, lng = lng as Double)
+            }
+
             val activity = data["activity"]
             val battery = data["battery"]
             val address = data["address"]
@@ -502,9 +510,6 @@ object BackgroundApiManagerUtil {
                 "battery" to battery,
                 "address" to address
             )
-            if(lat != null && lng != null) {
-                sendNotificationForPlaceChecking(lat = lat as Double, lng = lng as Double)
-            }
             locRef.push().setValue(uploadData)
                 .addOnSuccessListener {
 
@@ -521,7 +526,7 @@ object BackgroundApiManagerUtil {
         }
     }
 
-    fun sendNotificationForPlaceChecking(lat: Double, lng: Double) {
+    fun sendNotificationForPlaceChecking(lat: Double, lng: Double, isPendingNotification: Boolean = false,time: Long? = null ) {
         val sharedPreferenceManager = MainApplication.getSharedPreferenceManager()
 
         val lastTriggerTime = sharedPreferenceManager.getLastPlaceCheckTriggerTime()
@@ -550,7 +555,7 @@ object BackgroundApiManagerUtil {
             for (place in placeCheckins) {
                 val distance = FloatArray(1)
                 Location.distanceBetween(lat, lng, place.lat, place.lng, distance)
-                val isInside = distance[0] <= (place.radiusInFeet * 0.3048)
+                val isInside = distance[0] <= (place.radiusInFeet * 0.3048)  //converting the distance into meters from feats
 
                 val wasInside = lastSavedLocation?.let {
                     val prevDistance = FloatArray(1)
@@ -572,7 +577,32 @@ object BackgroundApiManagerUtil {
                                 CoroutineScope(Dispatchers.IO).launch {
                                     val json = JSONObject().apply {
                                         put("token", token)
-                                        put("message", "$userName has $movementType ${place.placeName}!")
+                                        var finalMessage = ""
+                                        if (isPendingNotification) {
+                                            val eventTime = time ?: System.currentTimeMillis()
+                                            val calendar = Calendar.getInstance().apply { timeInMillis = eventTime }
+                                            val now = Calendar.getInstance()
+
+                                            val datePrefix = when {
+                                                // Check if same day
+                                                calendar.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                                                        calendar.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR) -> "Earlier today"
+
+                                                // Check if yesterday
+                                                calendar.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                                                        now.get(Calendar.DAY_OF_YEAR) - calendar.get(Calendar.DAY_OF_YEAR) == 1 -> "Yesterday"
+
+                                                // Older dates
+                                                else -> java.text.SimpleDateFormat("MMM dd", Locale.getDefault()).format(eventTime)
+                                            }
+
+                                            val formattedTime = java.text.SimpleDateFormat("hh:mm a", Locale.getDefault()).format(eventTime)
+                                            finalMessage = "$datePrefix at $formattedTime, $userName $movementType ${place.placeName}!"
+
+                                        }else{
+                                            finalMessage = "$userName has $movementType ${place.placeName}!"
+                                        }
+                                        put("message", finalMessage)
                                         if (profileImageUrl.isNotEmpty()) put("imageUrl", profileImageUrl)
                                     }
 
