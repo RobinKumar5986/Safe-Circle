@@ -46,6 +46,12 @@ class GroupViewModel @Inject constructor() : ViewModel() {
     private val _isLoadingForArchive = MutableStateFlow(false)
     val isLoadingForArchive: StateFlow<Boolean> = _isLoadingForArchive
 
+    private val _emptyDataForDate = MutableStateFlow(false)
+    val emptyDataForDate: StateFlow<Boolean> = _emptyDataForDate
+
+    private val _updateMap = MutableStateFlow(false)
+    val updateMap: StateFlow<Boolean> = _updateMap
+
 
 
     private val _user = MutableStateFlow<User?>(null)
@@ -425,6 +431,82 @@ class GroupViewModel @Inject constructor() : ViewModel() {
 
             calendar.add(Calendar.DAY_OF_MONTH, -1)
         }
+    }
+
+    fun fetchSelectedDateFromArchive(userId: String, selectedMillis: Long) {
+        val dbRef = FirebaseDatabase.getInstance().getReference("Location")
+            .child("LocationArchive")
+            .child(userId)
+
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = selectedMillis
+        }
+
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val formattedDate = String.format("%04d-%02d-%02d", year, month, day)
+        val logTag = "ArchiveFetch"
+
+        _isLoadingForArchive.value = true
+
+        val dayRef = dbRef.child(year.toString())
+            .child(month.toString())
+            .child(day.toString())
+
+        dayRef.get().addOnSuccessListener { snapshot ->
+            if (!snapshot.exists() || snapshot.childrenCount == 0L) {
+                Log.d(logTag, "No data found for date: $formattedDate (Snapshot empty or null)")
+                _isLoadingForArchive.value = false
+                _emptyDataForDate.value = true // toggle the value to trigger the toast
+                return@addOnSuccessListener
+            }
+
+            val dayList = mutableListOf<ArchiveLocationData>()
+
+            for (childSnapshot in snapshot.children) {
+                val dataMap = childSnapshot.value as? Map<*, *> ?: continue
+
+                val data = ArchiveLocationData(
+                    activity = dataMap["activity"] as? String,
+                    address = dataMap["address"] as? String,
+                    battery = (dataMap["battery"] as? Long)?.toInt(),
+                    latitude = dataMap["latitude"] as? Double,
+                    longitude = dataMap["longitude"] as? Double,
+                    timeStamp = dataMap["timeStamp"] as? Long
+                )
+                dayList.add(data)
+            }
+
+            if (dayList.isNotEmpty()) {
+                Log.d(logTag, "Successfully fetched ${dayList.size} points for $formattedDate")
+
+                val currentList = _archiveLocationList.value.toMutableList()
+                val selectedDayData = listOf(Pair(formattedDate, dayList))
+                val filteredNewData = HelperFunctions.filterArchiveLocationData(locationData = selectedDayData)
+
+                // Prepend new data to index 0
+                _archiveLocationList.value = filteredNewData + _archiveLocationList.value
+                _updateMap.value = true
+            } else {
+                Log.w(logTag, "Data existed for $formattedDate but could not be parsed into ArchiveLocationData")
+            }
+
+            _isLoadingForArchive.value = false
+
+        }.addOnFailureListener { exception ->
+            Log.e(logTag, "Firebase Error fetching $formattedDate: ${exception.message}", exception)
+            _isLoadingForArchive.value = false
+        }
+    }
+
+    fun resetEmptyDataState() {
+        _emptyDataForDate.value = false
+    }
+
+    fun resetUpdateMap() {
+        _updateMap.value = false
     }
 
     fun stopListening() {

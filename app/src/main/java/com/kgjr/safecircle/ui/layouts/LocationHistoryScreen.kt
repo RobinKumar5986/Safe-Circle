@@ -1,5 +1,6 @@
 package com.kgjr.safecircle.ui.layouts
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,10 +26,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.kgjr.safecircle.ui.viewmodels.GroupViewModel
+import kotlin.collections.mutableListOf
 
 @Composable
 fun LocationHistoryScreen(userId: String) {
@@ -37,13 +40,29 @@ fun LocationHistoryScreen(userId: String) {
     val isLoading by viewModel.isLoadingForArchive.collectAsState()
     var selectedGroupIndex by remember { mutableIntStateOf(0) }
     val cameraPositionState = rememberCameraPositionState()
+    val context = LocalContext.current
+    val updateMapStatus by viewModel.updateMap.collectAsState()
+    val emptyDataForDate by viewModel.emptyDataForDate.collectAsState()
+
+    val alreadySelectedDates = remember { mutableSetOf<Long>() }
 
     LaunchedEffect(userId) {
         if (locationHistory.isEmpty()) {
             viewModel.fetchLocationsFromArchive(userId)
         }
     }
-
+    LaunchedEffect(emptyDataForDate) {
+        if( emptyDataForDate) {
+            Toast.makeText(context, "No Location History Found", Toast.LENGTH_SHORT).show()
+            viewModel.resetEmptyDataState()
+        }
+    }
+    LaunchedEffect(updateMapStatus) {
+        if(updateMapStatus){
+            selectedGroupIndex = 0
+            viewModel.resetUpdateMap()
+        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
 
         // Background map
@@ -51,7 +70,14 @@ fun LocationHistoryScreen(userId: String) {
             locationHistory = locationHistory,
             selectedGroupIndex = selectedGroupIndex,
             cameraPositionState = cameraPositionState
-        )
+        ){ selectedDate ->
+            if(alreadySelectedDates.contains(selectedDate)) {
+                Toast.makeText(context,"Data already present", Toast.LENGTH_SHORT).show()
+            }else {
+                viewModel.fetchSelectedDateFromArchive(userId = userId, selectedDate)
+                alreadySelectedDates.add(selectedDate)
+            }
+        }
 
         // Fixed bottom panel (not draggable)
         Box(

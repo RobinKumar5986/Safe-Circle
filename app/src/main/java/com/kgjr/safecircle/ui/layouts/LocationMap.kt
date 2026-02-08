@@ -1,14 +1,23 @@
 package com.kgjr.safecircle.ui.layouts
 
 import android.location.Location
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
@@ -36,12 +46,14 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationMap(
     locationHistory: List<List<ArchiveLocationData>>,
     selectedGroupIndex: Int,
     cameraPositionState: CameraPositionState,
     bottomOverlayHeightDp: Int = 370,
+    onDateSelected: (Long) -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
@@ -62,6 +74,49 @@ fun LocationMap(
         selectedMapType = LocationUtils.getMapTypeFromId(mapTypeId)
     }
 
+
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val calendar = Calendar.getInstance()
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+
+    calendar.add(Calendar.DAY_OF_YEAR, -4)
+    val fiveDaysAgoStartMillis = calendar.timeInMillis // because the calender itself is set 5 day in past.
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = fiveDaysAgoStartMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis < fiveDaysAgoStartMillis
+                }
+
+                override fun isSelectableYear(year: Int): Boolean {
+                    return year <= Calendar.getInstance().get(Calendar.YEAR)
+                }
+            }
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        onDateSelected(it)
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier
@@ -86,7 +141,7 @@ fun LocationMap(
                         width = 5f
                     )
 
-                    LaunchedEffect(selectedGroupIndex) {
+                    LaunchedEffect(selectedGroupIndex,locationHistory) {
                         val boundsBuilder = LatLngBounds.Builder()
                         points.forEach { boundsBuilder.include(it) }
                         val bounds = boundsBuilder.build()
@@ -104,7 +159,7 @@ fun LocationMap(
                     }
                 }
 
-                val stayPoints = remember(selectedGroupIndex) {
+                val stayPoints = remember(selectedGroupIndex,locationHistory) {
                     val selectedPath = locationHistory.getOrNull(selectedGroupIndex) ?: emptyList()
                     if (selectedPath.isEmpty()) return@remember emptyList()
 
@@ -259,41 +314,74 @@ fun LocationMap(
             }
         }
 
-        AnimatedVisibility(
-            visible = initialBounds.value != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .offset(y = (-400).dp)
-                .padding(end = 16.dp, bottom = 8.dp)
+                .padding(end = 16.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            FloatingActionButton(
-                onClick = {
-                    coroutineScope.launch {
-                        initialBounds.value?.let { bounds ->
-                            val center = bounds.center
-                            cameraPositionState.animate(
-                                update = CameraUpdateFactory.newLatLng(center),
-                                durationMs = 700
-                            )
-                            cameraPositionState.animate(
-                                update = CameraUpdateFactory.newLatLngBounds(bounds, 250),
-                                durationMs = 1000
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.size(35.dp),
-                shape = CircleShape,
-                containerColor = Color.White,
-                contentColor = Color.DarkGray
+            AnimatedVisibility(
+                visible = initialBounds.value != null,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.outline_my_location),
-                    contentDescription = "Re-center Map",
-                    tint = primaryVariant
-                )
+                FloatingActionButton(
+                    onClick = {
+                       showDatePicker = true
+                    },
+                    modifier = Modifier.size(35.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    containerColor = Color.White,
+                    contentColor = Color.DarkGray
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.calendar),
+                            contentDescription = "Select Date",
+                            tint = primaryVariant,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = initialBounds.value != null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            initialBounds.value?.let { bounds ->
+                                val center = bounds.center
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLng(center),
+                                    durationMs = 700
+                                )
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLngBounds(bounds, 250),
+                                    durationMs = 1000
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.size(35.dp),
+                    shape = CircleShape,
+                    containerColor = Color.White,
+                    contentColor = Color.DarkGray
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.outline_my_location),
+                            contentDescription = "Re-center Map",
+                            tint = primaryVariant,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
         }
     }
