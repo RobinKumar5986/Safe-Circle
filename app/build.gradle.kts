@@ -18,8 +18,8 @@ android {
         applicationId = "com.kgjr.safecircle"
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
-        versionName = "1.2.0"
+        versionCode = 28
+        versionName = "1.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
