@@ -1,1 +1,24 @@
+# Local configuration
+local.properties
+
+# Google Services (contains API keys)
+google-services.json
+
+# Build folders
 /build
+/app/build
+
+# Gradle
+.gradle/
+build/
+
+# Android Studio
+.idea/
+*.iml
+
+# Keystore files
+*.jks
+*.keystore
+
+# OS files
+.DS_Store
